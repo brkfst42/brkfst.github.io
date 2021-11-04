@@ -1,2 +1,4 @@
-# breakfast1001.github.io
-Code for breakfast
+# brkfst.github.io
+
+Knowing vs Understanding. 
+Choose to understand. 
