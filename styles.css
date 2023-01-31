@@ -29,12 +29,9 @@ body {
   padding: 20px 10px;
 }
 
-.gallery img {
-  width: 100%;
-  max-width: 350px;
-  height: 300px;
-  object-fit: cover;
-  border-radius: 10px;
+.gallery::after {
+  content: "";
+  width: 350px;
 }
 
 div {
@@ -46,8 +43,4 @@ div:after {
   content: "";
   display: inline-block;
   width: 100%;
-}
-.gallery::after {
-  content: "";
-  width: 350px;
 }
