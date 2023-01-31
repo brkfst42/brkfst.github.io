@@ -22,30 +22,14 @@ h2 {
   border-bottom: 4px solid #FFD700;
 }
 
-.gallery {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 10px 10px;
-}
-
-.gallery::after {
-  content: "";
-  width: 100px;
-}
-
 div {
   text-align: center;
   font-size: 4.3vw;
+  justify-content: center;
+  align-items: center;
 }
 
 div::after {
   content: "";
   width: 350px;
-  display: inline-block;
 }
