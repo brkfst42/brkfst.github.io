@@ -37,15 +37,10 @@ h2 {
 .gallery::after {
   content: "";
   width: 350px;
+    display: inline-block;
 }
 
 div {
-  text-align: justify;
+  text-align: center;
   font-size: 4.3vw;
-  align-items: center;
-}
-
-div:after {
-  display: inline-block;
-  width: 100%;
 }
