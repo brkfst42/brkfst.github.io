@@ -36,8 +36,7 @@ h2 {
 
 .gallery::after {
   content: "";
-  width: 350px;
-  display: inline-block;
+  width: 100px;
 }
 
 div {
