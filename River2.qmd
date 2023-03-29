@@ -1,0 +1,322 @@
+---
+title: "Reaction Time Data Analysis"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: show
+    code-summary: "Code"
+date: "`r Sys.Date()`"
+editor: visual
+---
+
+## Hypotheses and Planned Statistical Tests
+
+### Recap on experimental conditions
+
+```{r conditions recap table, message=FALSE, warning= FALSE, results='asis'}
+#| echo: false
+#| code-fold: true
+
+library(tidyverse)
+library(knitr, include.only = 'kable')
+
+experimental_conditions_recap <- tibble(
+  Agent = c("Robotic Arm, Humanoid, Human"),
+  Motion_type = c("Biological, Nonbiological"),
+  Outcome_type = c("Correct (Pouring), Error (Spilling)")
+)
+
+knitr::kable(experimental_conditions_recap, align = "c", caption = "**3 x 2 x 2 Experimental Design**")
+
+```
+
+### Hypotheses
+
+**Please note**: H4 was the Main Hypothesis. H5 and H6 were intended to state explicitly what I expected in terms of directionality and magnitude of relationships between conditions.
+
+H4. Participants will show faster response time ~~and higher accuracy~~ in error detection when the action is performed in biological motion, compared to non-biological motion.
+
+H5. **In the biological motion condition**, participants' response times for detecting erroneous action will be statistically equivalent when observing a robotic arm, humanoid, or human.
+
+H6. In the **non-biological motion condition**, participants' error detection response times for detecting erroneous action will be fastest for the human, followed by the humanoid, and slowest for the robotic arm.
+
+### Planned Statistical Tests
+
+Some deviations from the preregistration: For H4, I had proposed 3 separate t-tests. My original thinking was simply to avoid a 3x2x2 ANOVA model! I had believed that it would create (in my opinion) unnecessary complications in interpretation. In retrospect, 3 t-tests would of course be hugely inadequate to test the relationships between 12 conditions! Also, 3 t-tests would probably show a disregard for the familywise error rate.
+
+### Now proposing statistical tests
+
+Tbh I haven't exactly decided which models to run. Below are a set of interaction plots, and then a 3x1 repeated measures ANOVA on 3 agents (Robotic Arm, Humanoid, Human) in Error Condition only and Nonbiological Motion only.
+
+Then I also attempt a Minimal Effect Test as a t-test comparing Robotic Arm and Humanoid as my equivalence test for Biological Motion only, Error only.
+
+#### Load packages
+
+```{r load packages, message=FALSE}
+#| code-fold: true
+# library(tidyverse)
+library(pwr)
+library(rcompanion) #transformTukey
+library(lsr) 
+library(car)
+library(broom)
+library(afex) 
+library(emmeans)
+library(cowplot, include.only = c('plot_grid', 'ggdraw'))
+library(ggplotify, include.only= 'as.grob')
+library(TOSTER)
+library(performance)
+```
+
+#### Load data
+
+```{r load the cleaned data}
+#| code-fold: true
+reactionTime_preprocess <- read_csv("reactionTime_preprocess.csv", 
+                                    show_col_types = FALSE)
+summary_statistics <- read_csv("reactionTime_summary_statistics.csv", 
+                               show_col_types = FALSE)
+
+# summary_statistics_error <- summary_statistics |> filter(outcome_type == "Error")
+
+```
+
+## Interaction plots
+
+### Subset by Agent
+
+```{r interaction plots agent, warning=FALSE, message=FALSE}
+#| code-fold: true
+iplot_arm <- 
+  summary_statistics |> 
+  filter(agent == "Robotic Arm") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type")+
+  scale_y_continuous(name = "Mean response time \nin advance of outcome \n(milliseconds)", limits=c(-250, 600)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1") + 
+  scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(legend.position="none", 
+        plot.title = element_text(hjust = 0.6, face = "bold", size = 14), 
+        axis.title.y = element_text(vjust = +1, size = 13),
+    axis.title.x = element_text(vjust = -1.5, size = 13), 
+    axis.text =element_text(size=12)) + 
+  ggtitle("Robotic Arm")
+
+
+iplot_humanoid <- summary_statistics |> 
+  filter(agent == "Humanoid") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type") + 
+   scale_y_continuous(limits=c(-250, 600)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(legend.position="none", 
+        plot.title = element_text(hjust = 0.6, face = "bold", size = 14), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_text(vjust = -1.5, size = 13), 
+        axis.text=element_text(size=12)) + 
+  ggtitle("Humanoid")
+
+iplot_human <- summary_statistics |> 
+  filter(agent == "Human") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type")+
+ scale_y_continuous(limits=c(-250, 500)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 14), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_text(vjust = -1.5, size = 13), 
+        axis.text=element_text(size=12)) + 
+  ggtitle("Human")
+
+# use ggplotify::as.grob to convert plots into grobs first
+iplot_arm <- as.grob(iplot_arm)
+iplot_humanoid <- as.grob(iplot_humanoid)
+iplot_human <- as.grob(iplot_human)
+
+```
+
+```{r wrapper for setting titles for cowplots}
+#| code-fold: true
+#| eval: false
+
+draw_label_theme <- function(label, theme = NULL, element = "text", ...) {
+  if (is.null(theme)) {
+    theme <- ggplot2::theme_get()
+  }
+  if (!element %in% names(theme)) {
+    stop("Element must be a valid ggplot theme element name")
+  }
+
+  elements <- ggplot2::calc_element(element, theme)
+
+  cowplot::draw_label(label, 
+                      fontfamily = elements$family,
+                      fontface = elements$face,
+                      colour = elements$color,
+                      size = elements$size,
+                      ...
+  )
+}
+
+# set titles
+iplot_agent_title <- ggdraw() +
+  draw_label_theme("Interaction Plots by Agent", 
+                   element = "plot.title",
+                   x = 0.05, hjust = 0, vjust = 1)
+```
+
+```{r interaction plot grid by agents, fig.width=12, fig.height=6}
+#| code-fold: true
+# arrange 3 interaction plots horizontally using cowplot::plot_grid
+# remember to provide list() not vector 
+plot_grid(plotlist = list(iplot_arm, iplot_humanoid, iplot_human), align = "h", nrow = 1, rel_widths = c(1.6, 1.5, 1.7))
+
+```
+
+## Run ANOVA for Error Conditions Only & Nonbiological Motion Only
+
+**3 x 1 repeated measures ANOVA**
+
+```{r ANOVA 3 agent x DV, message=FALSE, warning=FALSE}
+
+# TODO: check missing values
+# TODO: check outliers and potentially remove those beyond 1.5 IQR
+
+subset_error_nonbio <- reactionTime_preprocess |> filter(outcome_type =="Error") |> filter(motion_type =="Nonbiological") 
+
+subset_error_bio <- reactionTime_preprocess |> filter(outcome_type =="Error") |> filter(motion_type =="Biological")
+
+mod_3x1_error_nonbio <- aov_ez(id = "participant", 
+              dv = "mean_of_3_rounds", # the DV 
+              within = "agent", # the between-subject variable
+              es = "pes", # sets effect size to partial eta-squared
+              type = 3, # this affects how the sum of squares is calculated, set this to 3
+              include_aov = TRUE, 
+              data = subset_error_nonbio)
+
+anova(mod_3x1_error_nonbio)
+# Anova Table (Type 3 tests)
+# 
+# Response: mean_of_3_rounds
+#       num Df den Df   MSE      F     ges    Pr(>F)    
+# agent 1.8205 98.308 39536 59.724 0.18008 < 2.2e-16 ***
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+mod_3x1_error_nonbio_output <- (mod_3x1_error_nonbio$anova_table) |> tidy()
+
+# p-value: 8.858322e-17, p < .001
+# F-statistic to 2 decimal places 59.72437
+# effect size, partial eta squared 0.1800833 (approaching medium)
+
+knitr::kable(mod_3x1_error_nonbio_output)
+
+```
+
+### Check Assumptions for ANOVA (Should remove outliers first)
+
+Assumption 1. DV is interval or ratio data. ✅ SATISFIED Assumption 2. The observations should be independent: met by the experimental design. ✅ SATISFIED
+
+#### 3. Residuals should be normally distributed
+
+```{r residuals normal dist}
+qqPlot(mod_3x1_error_nonbio$lm$residuals)
+
+shapiro.test(mod_3x1_error_nonbio$lm$residuals)
+
+# Shapiro-Wilk normality test
+# 
+# data:  mod_3x1_error_nonbio$lm$residuals
+# W = 0.94844, p-value = 9.84e-06
+```
+
+#### 4. Homogeneity of variances
+
+Equal variances among the differences between all possible pairs of the IV.
+
+### Equivalence between Robotic Arm and Humanoid?
+
+What if we run an equivalence test (two one-sided t-tests, TOST) to compare only ROBOTIC ARM and HUMANOID. (Error only, Biological Motion only)
+
+#### Check Assumptions
+
+```{r TOST check assumptions}
+
+subset_for_TOST <- subset_error_bio |> filter(agent != "Human") |> select(-c(motion_type, outcome_type, stimulus))
+
+v1 <- subset(subset_for_TOST, agent=="Robotic Arm")$mean_of_3_rounds
+length(v1) #56
+sum(is.na(v1)) #0
+
+v2 <- subset(subset_for_TOST, agent=="Humanoid")$mean_of_3_rounds
+length(v2) #56
+sum(is.na(v2)) #0
+
+# Assumptions for paired sample t-test: 
+# 1. The data is continuous, i.e. interval/ratio (SATISFIED)
+# 2. All participants should appear in both conditions/groups. (SATISFIED BY EXPERIMENTAL DESIGN)
+# 3. The residuals are normally distributed. 
+
+testing_tibble <- subset_for_TOST |> 
+  pivot_wider(
+    names_from = agent,
+    values_from = c(mean_of_3_rounds), id_cols = participant
+  )
+
+response_time_residual <- testing_tibble |> 
+  mutate(diff = `Robotic Arm` - Humanoid) |> 
+  mutate(group_resid = diff - mean(diff, na.rm = TRUE))
+
+car::qqPlot(response_time_residual$group_resid) # TODO: remove outliers
+
+shapiro.test(response_time_residual$group_resid)
+
+# Shapiro-Wilk normality test
+# 
+# data:  response_time_residual$group_resid
+# W = 0.98621, p-value = 0.7693
+
+```
+
+```{r tost attempt}
+# alpha is 0.05 by default
+
+equivalence_model = t_TOST(x = subset(subset_for_TOST, agent=="Robotic Arm")$mean_of_3_rounds,
+               y = subset(subset_for_TOST, agent=="Humanoid")$mean_of_3_rounds,
+               eqb = .35, rm_correction = TRUE, hypothesis = "MET",
+               paired = TRUE)
+
+print(equivalence_model)
+
+# Paired t-test
+# 
+# The minimal effect test was non-significant, t(55) = 0.0978, p = 4.68e-01
+# The null hypothesis test was non-significant, t(55) = 0.0898, p = 9.29e-01
+# NHST: don't reject null significance hypothesis that the effect is equal to zero 
+# TOST: don't reject null MET hypothesis
+# 
+# TOST Results 
+# 
+# Effect Sizes 
+# Note: SMD confidence intervals are an approximation. See vignette("SMD_calcs").
+ 
+                # t       # df    # p.value
+# t-test    	0.08978417	  55	      0.929	
+# TOST Lower	0.09780744	  55	      0.539	
+# TOST Upper	0.08176091	  55	      0.468	
+
+                    # Estimate      # SE          # C.I.              # Conf. Level
+# Raw	              3.916666667	  43.62312959	  [-69.0663, 76.8996]	    0.9
+# Hedges's g(rm)	  0.008523623	  0.09805705	  [-0.2083, 0.2253]	      0.9
+
+```
+
+## Accuracy - Might exclude from main analysis
