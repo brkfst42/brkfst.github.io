@@ -1,0 +1,987 @@
+---
+title: "Reaction Time Data Analysis"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: show
+    code-summary: "Code"
+date: "`r Sys.Date()`"
+editor: visual
+---
+
+### Load packages
+
+```{r conditions recap table, message=FALSE, warning= FALSE, results='asis'}
+#| code-fold: true
+
+library(tidyverse)
+library(knitr, include.only = 'kable')
+library(pwr)
+library(rcompanion) # such interesting documentation 
+library(lsr) 
+library(car)
+library(broom)
+library(afex) 
+library(emmeans)
+library(cowplot, include.only = c('plot_grid', 'ggdraw'))
+library(ggplotify, include.only= 'as.grob')
+library(TOSTER)
+library(performance)
+library(wesanderson)
+library(effectsize, include.only = 'cohens_d')
+```
+
+#### Load data
+
+```{r load the cleaned data, message=FALSE, warning=FALSE}
+#| code-fold: true
+reactionTime <- read_csv("reactionTime_preprocess.csv", 
+                                    show_col_types = FALSE) |> 
+    mutate(agent = case_when(
+    str_detect(stimulus, "Human") ~ "Human", 
+    str_detect(stimulus, "Milo") ~ "Humanoid", 
+    str_detect(stimulus, "Theo") ~ "Robotic Arm", 
+  )) |> 
+  mutate(motion_type = case_when(
+    str_detect(stimulus, "Bio") ~ "Biological",
+    str_detect(stimulus, "Nonbio") ~ "Nonbiological", 
+  )) |>
+  mutate(outcome_type = case_when(
+    str_detect(stimulus, "Correct") ~ "Correct", 
+    str_detect(stimulus, "Spill") ~ "Error")) 
+
+summary_statistics <- read_csv("reactionTime_summary_statistics.csv", 
+                               show_col_types = FALSE)
+plotting <- read_csv("plottingReactionTime.csv", 
+                     show_col_types = FALSE)
+# summary_statistics_error <- summary_statistics |> filter(outcome_type == "Error")
+
+```
+
+## Split violin
+
+```{r, message=FALSE, warning=FALSE}
+# https://stackoverflow.com/questions/35717353/split-violin-plot-with-ggplot2
+# trying the solution with the nudge
+
+GeomSplitViolin <- ggplot2::ggproto(
+    "GeomSplitViolin",
+    ggplot2::GeomViolin,
+    draw_group = function(self,
+                          data,
+                          ...,
+                          # add the nudge here
+                          nudge = 0,
+                          draw_quantiles = NULL) {
+        data <- transform(data,
+                          xminv = x - violinwidth * (x - xmin),
+                          xmaxv = x + violinwidth * (xmax - x))
+        grp <- data[1, "group"]
+        newdata <- plyr::arrange(transform(data,
+                                           x = if (grp %% 2 == 1) xminv else xmaxv),
+                                 if (grp %% 2 == 1) y else -y)
+        newdata <- rbind(newdata[1, ],
+                         newdata,
+                         newdata[nrow(newdata), ],
+                         newdata[1, ])
+        newdata[c(1, nrow(newdata)-1, nrow(newdata)), "x"] <- round(newdata[1, "x"])
+
+        # now nudge them apart
+        newdata$x <- ifelse(newdata$group %% 2 == 1,
+                            newdata$x - nudge,
+                            newdata$x + nudge)
+
+        if (length(draw_quantiles) > 0 & !scales::zero_range(range(data$y))) {
+
+            stopifnot(all(draw_quantiles >= 0), all(draw_quantiles <= 1))
+
+            quantiles <- ggplot2:::create_quantile_segment_frame(data,
+                                                             draw_quantiles)
+            aesthetics <- data[rep(1, nrow(quantiles)),
+                               setdiff(names(data), c("x", "y")),
+                               drop = FALSE]
+            aesthetics$alpha <- rep(1, nrow(quantiles))
+            both <- cbind(quantiles, aesthetics)
+            quantile_grob <- ggplot2::GeomPath$draw_panel(both, ...)
+            ggplot2:::ggname("geom_split_violin",
+                             grid::grobTree(ggplot2::GeomPolygon$draw_panel(newdata, ...),
+                                            quantile_grob))
+        }
+    else {
+            ggplot2:::ggname("geom_split_violin",
+                             ggplot2::GeomPolygon$draw_panel(newdata, ...))
+        }
+    }
+)
+
+geom_split_violin <- function(mapping = NULL,
+                              data = NULL,
+                              stat = "ydensity",
+                              position = "identity",
+                              # nudge param here
+                              nudge = 0.01,
+                              ...,
+                              draw_quantiles = NULL,
+                              trim = FALSE,
+                              scale = "area",
+                              na.rm = TRUE,
+                              show.legend = NA,
+                              inherit.aes = TRUE) {
+
+    ggplot2::layer(data = data,
+                   mapping = mapping,
+                   stat = stat,
+                   geom = GeomSplitViolin,
+                   position = position,
+                   show.legend = show.legend,
+                   inherit.aes = inherit.aes,
+                   check.aes = TRUE,
+                   params = list(trim = trim,
+                                 scale = scale,
+                                 # don't forget the nudge
+                                 nudge = nudge,
+                                 draw_quantiles = draw_quantiles,
+                                 na.rm = na.rm,
+                                 ...))
+}
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+Plot_bio <- plotting |>
+  mutate(agent = case_when(
+    str_detect(stimulus, "Human") ~ "Human", 
+    str_detect(stimulus, "Milo") ~ "Humanoid", 
+    str_detect(stimulus, "Theo") ~ "Robotic Arm", 
+  )) |> 
+  mutate(motion_type = case_when(
+    str_detect(stimulus, "Bio") ~ "Biological",
+    str_detect(stimulus, "Nonbio") ~ "Nonbiological", 
+  )) |>
+  mutate(outcome_type = case_when(
+    str_detect(stimulus, "Correct") ~ "Correct", 
+    str_detect(stimulus, "Spill") ~ "Error")) |> filter(motion_type == "Biological") 
+
+Plot_bio$title <- "Biological Motion"
+
+Plot_bio |> 
+  ggplot(aes(x = fct_rev(agent), y = mean_of_3_rounds, fill = outcome_type, alpha = .9)) + geom_split_violin() + 
+    geom_boxplot(width = .15, position = position_dodge(.3), na.rm = TRUE) +
+    stat_summary(fun = "mean", geom = "point", size = 2,
+               position = position_dodge(width = 0.3), na.rm = TRUE) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1,
+               position = position_dodge(width = 0.3), na.rm = TRUE) +
+    stat_summary(fun.data = "median_se", geom = "crossbar", width = .1,
+               position = position_dodge(width = 0.3), na.rm = TRUE) +
+  scale_y_continuous(limits = c(-500, 1000), name = "Response time\nin advance of outcome (ms)", 
+                     expand = c(0.05, 0.05, .05, .05)) + 
+  scale_x_discrete(name = "Agent") +
+  scale_fill_manual(values = c("lightblue", "#A0522D"))+
+  theme_linedraw() + guides(alpha = "none") + 
+  guides(fill = guide_legend(title="Outcome")) +
+    theme(
+        plot.margin = margin(1,1,1,1, "cm"), 
+        strip.text.x = element_text(size = 14, face="bold"), 
+#        plot.title = element_text(hjust = 0.6, face = "bold", size = 16), 
+        axis.title.y = element_text(size = 14, vjust = +2), 
+        axis.title.x = element_text(vjust = -2, size = 14), 
+        axis.text=element_text(size=12)) + facet_wrap(~title)
+
+```
+
+```{r, warning=FALSE, message=FALSE, warning=FALSE}
+
+Plot_nonbio <- plotting |>
+  mutate(agent = case_when(
+    str_detect(stimulus, "Human") ~ "Human", 
+    str_detect(stimulus, "Milo") ~ "Humanoid", 
+    str_detect(stimulus, "Theo") ~ "Robotic Arm", 
+  )) |> 
+  mutate(motion_type = case_when(
+    str_detect(stimulus, "Bio") ~ "Biological",
+    str_detect(stimulus, "Nonbio") ~ "Nonbiological", 
+  )) |>
+  mutate(outcome_type = case_when(
+    str_detect(stimulus, "Correct") ~ "Correct", 
+    str_detect(stimulus, "Spill") ~ "Error")) |> filter(motion_type == "Nonbiological") 
+
+Plot_nonbio$title <- "Nonbiological Motion"
+
+Plot_nonbio |> 
+  ggplot(aes(x = fct_rev(agent), y = mean_of_3_rounds, fill = outcome_type, alpha = .9)) + 
+  geom_split_violin() +
+    geom_boxplot(width = .15, 
+               position = position_dodge(.3), fatten = NULL, na.rm = TRUE) +
+  stat_summary(fun = "mean", geom = "point", na.rm = TRUE, size = 2,
+               position = position_dodge(width = 0.3)) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", na.rm = TRUE, width = .1,
+               position = position_dodge(width = 0.3)) +
+    stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1,
+               position = position_dodge(width = 0.3), na.rm = TRUE) +
+  scale_fill_manual(values = c("lightblue", "#A0522D")) +
+#  scale_fill_manual(values = wes_palette("Royal1", n=2))+
+  theme_linedraw()+ 
+        theme(
+        plot.margin = margin(1,1,1,1, "cm"), 
+        axis.title.y = element_text(size = 14), 
+        axis.title.x = element_text(vjust = -4, size = 14), 
+        axis.text = element_text(size=12), 
+        strip.text = element_text(size = 14, face = "bold")) +
+  scale_y_continuous(limits = c(-500, 1000), name = "Response time\nin advance of outcome (ms)", 
+                     expand = c(0.05, 0.05, .05, .05)) + 
+  scale_x_discrete(name = "Agent") +
+  guides(alpha = "none") +
+  guides(fill = guide_legend(title="Outcome")) + facet_wrap(~title)
+
+```
+
+```{r half violin separate, message=FALSE, warning=FALSE}
+#| code-fold: true
+"%||%" <- function(a, b) {
+  if (!is.null(a)) a else b
+}
+
+geom_half_violin <- function(mapping = NULL, data = NULL, stat = "ydensity",
+                             position = "dodge", trim = TRUE, scale = "area",
+                             show.legend = NA, inherit.aes = TRUE, ...) {
+  layer(
+    data = data,
+    mapping = mapping,
+    stat = stat,
+    geom = GeomHalfViolin,
+    position = position,
+    show.legend = show.legend,
+    inherit.aes = inherit.aes,
+    params = list(
+      trim = trim,
+      scale = scale,
+      ...
+    )
+  )
+}
+
+GeomHalfViolin <-
+  ggproto("Violinist", Geom,
+          setup_data = function(data, params) {
+            data$width <- data$width %||%
+              params$width %||% (resolution(data$x, FALSE) * 0.9)
+            
+            # ymin, ymax, xmin, and xmax define the bounding rectangle for each group
+            data %>%
+              group_by(group) %>%
+              mutate(ymin = min(y),
+                     ymax = max(y),
+                     xmin = x,
+                     xmax = x + width / 2)
+            
+          },
+          
+          draw_group = function(data, panel_scales, coord) {
+            # Find the points for the line to go all the way around
+            data <- transform(data, xminv = x,
+                              xmaxv = x + violinwidth * (xmax - x))
+            
+            # Make sure it's sorted properly to draw the outline
+            newdata <- rbind(plyr::arrange(transform(data, x = xminv), y),
+                             plyr::arrange(transform(data, x = xmaxv), -y))
+            
+            # Close the polygon: set first and last point the same
+            # Needed for coord_polar and such
+            newdata <- rbind(newdata, newdata[1,])
+            
+            ggplot2:::ggname("geom_flat_violin", GeomPolygon$draw_panel(newdata, panel_scales, coord))
+          },
+          
+          draw_key = draw_key_polygon,
+          
+          default_aes = aes(weight = 1, colour = "grey20", fill = "white", size = 0.5,
+                            alpha = NA, linetype = "solid"),
+          
+          required_aes = c("x", "y")
+  )
+```
+
+```{r RT violin bio, fig.height=9, fig.width=9, warning=FALSE, message=FALSE}
+
+Plot_bio |> 
+ ggplot(aes(x = stimulus, y = -(mean_of_3_rounds), fill = outcome_type)) + 
+  geom_half_violin(trim=FALSE, na.rm = TRUE, width = 1, 
+                   position =position_nudge(x = -.15, y = 0)) + 
+  geom_boxplot(fill = "white", width = .17, alpha = 0.5, fatten = NULL, 
+               position = position_dodge(.15)
+               ) +
+  stat_summary(fun = "mean", geom = "point") +
+  scale_fill_manual(values = c("lightblue", "#A0522D")) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1) +
+  coord_flip() + 
+  guides(alpha = "none") +
+  guides(fill = guide_legend(title="Outcome")) + 
+  geom_hline(yintercept = 0, size = 1, color = "#303030") + 
+  theme_linedraw() + 
+  scale_x_discrete(name = "Conditions", 
+                   labels = c("Human", "Humanoid", "Robotic Arm"), 
+                   expand = c(0.15, .05, .35, .05)) +
+   scale_y_continuous(name = "Response time before seeing outcome (ms)", 
+                      expand = c(0.05, 0.05, .05, .05), n.breaks = 7,                       
+                      labels = c("1000\nbefore\npouring", "750", "500", "250", "0\noutcome\nshown", "-250", "-500"),
+                      limits = c(-1000, 500)) +
+      theme(
+        plot.margin = margin(1,1,1,1, "cm"), 
+        axis.title.y = element_text(size = 14), 
+        axis.title.x = element_text(vjust = -4, size = 14), 
+        axis.text = element_text(size=12), 
+        strip.text = element_text(size = 14, face = "bold"), 
+        panel.spacing = unit(2, "lines"), legend.position = "none"
+        ) + facet_wrap(~ outcome_type, scales = "free", nrow = 2)
+
+```
+
+```{r RT violin nonbio, fig.height=9, fig.width = 9, warning=FALSE, message=FALSE}
+Plot_nonbio |> 
+ ggplot(aes(x = stimulus, y = -(mean_of_3_rounds), fill = outcome_type)) + 
+  geom_half_violin(trim=FALSE, na.rm = TRUE, width = 1, 
+                   position = position_nudge(x = -.11, y = 0)) + 
+  geom_boxplot(fill = "white", width = .17,fatten = 2, na.rm = T, alpha = 0.6) +
+  stat_summary(fun = "mean", geom = "point", na.rm = T) +
+  scale_fill_manual(values = c("lightblue", "#A0522D")) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1, na.rm = T) +
+  coord_flip() + 
+  guides(alpha = "none") +
+  guides(fill = guide_legend(title="Outcome")) + 
+  geom_hline(yintercept = 0, size = 1, color = "#303030") + 
+  theme_linedraw() + 
+  scale_x_discrete(name = "Conditions", 
+                   labels = c("Human", "Humanoid", "Robotic Arm"), 
+                  expand = c(.15, .05, .35, .05)) +
+   scale_y_continuous(name = "Response time before seeing outcome (ms)", 
+                      expand = c(.05, .05, .05, .05), n.breaks = 7,       
+                      labels = c("1000\nbefore\npouring", "750", "500", "250", "0\noutcome\nshown", "-250", "-500"),
+                      limits = c(-1000, 500)) +
+      theme(
+        plot.margin = margin(1,.5,1,1, "cm"), 
+        axis.title.y = element_text(size = 14), 
+        axis.title.x = element_text(vjust = -4, size = 14), 
+        axis.text = element_text(size=12), 
+        strip.text = element_text(size = 14, face = "bold"), 
+        panel.spacing = unit(2, "lines"), legend.position = "none"
+        ) +facet_wrap(~outcome_type, scales = "free", nrow=2)
+```
+
+```{r, fig.height=6, warning=FALSE, message=FALSE}
+Plot_bio |> 
+ ggplot(aes(x = agent, y = -(mean_of_3_rounds), fill = outcome_type, alpha = .8)) + 
+  geom_half_violin(position = position_nudge(x = .25, y = 0), 
+                   trim=FALSE, na.rm = TRUE, width = .8) + 
+  geom_boxplot(width = .3, alpha = 0.5, fatten = NULL, na.rm = T) +
+  stat_summary(fun = "mean", geom = "point",
+               position = position_dodge(width = 0.25), na.rm = T) +
+    scale_fill_manual(values = c("lightblue", "#A0522D")) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1,
+               position = position_dodge(width = 0.3), na.rm = T) +
+  coord_flip() + guides(alpha = "none") +
+  guides(fill = guide_legend(title="Outcome")) + 
+  geom_hline(yintercept = 0, size = 1) + 
+  scale_y_continuous() +
+  theme_linedraw() + 
+  scale_x_discrete(name = "Agent", 
+#                   labels = c("Human Error", "Human Correct", "Humanoid Error", "Humanoid Correct", "Robotic Arm Error", "Robotic Arm Correct"), 
+                   expand = c(.05, .05, .05, .05)) +
+   scale_y_continuous(name = "Response time before seeing outcome (ms)", 
+                      expand = c(.05, .05, .05, .05),
+                      labels = c("1000", "500", "0", "500")
+                      ) +
+      theme(
+        plot.margin = margin(1,1,1,1, "cm"), 
+        axis.title.y = element_text(size = 14), 
+        axis.title.x = element_text(vjust = -3, size = 14), 
+        axis.text=element_text(size=12))
+```
+
+```{r plot error only, fig.height=9, fig.width = 9, message=FALSE, warning=FALSE}
+
+plot_error_only <- plotting |>
+  mutate(agent = case_when(
+    str_detect(stimulus, "Human") ~ "Human", 
+    str_detect(stimulus, "Milo") ~ "Humanoid", 
+    str_detect(stimulus, "Theo") ~ "Robotic Arm", 
+  )) |> 
+  mutate(motion_type = case_when(
+    str_detect(stimulus, "Bio") ~ "Biological",
+    str_detect(stimulus, "Nonbio") ~ "Nonbiological", 
+  )) |>
+  mutate(outcome_type = case_when(
+    str_detect(stimulus, "Correct") ~ "Correct", 
+    str_detect(stimulus, "Spill") ~ "Error")) |> 
+  filter(outcome_type == "Error")
+  
+
+plot_error_only |> 
+  ggplot(aes(x = stimulus, y = -(mean_of_3_rounds), fill = motion_type)) + 
+  geom_half_violin(trim=FALSE, na.rm = TRUE, width = 1, 
+                   position = position_nudge(x = -.11, y = 0)) + 
+  geom_boxplot(fill = "white", width = .15,fatten = 2, na.rm = T, alpha = 0.6) +
+  stat_summary(fun = "mean", geom = "point", na.rm = T) +
+ scale_fill_manual(values = c("darkgreen", "brown")) +
+  stat_summary(fun.data = "mean_se", geom = "errorbar", width = .1, na.rm = T) +
+  coord_flip() + 
+  guides(alpha = "none") +
+  guides(fill = guide_legend(title="Outcome")) + 
+  geom_hline(yintercept = 0, size = 1, color = "#303030") + 
+  theme_linedraw() + 
+  scale_x_discrete(name = "Conditions", 
+                   labels = c("Human", "Humanoid", "Robotic Arm"), 
+                  expand = c(.15, .05, .35, .05)) +
+  scale_y_continuous(name = "Response time before seeing outcome (ms)", 
+                      expand = c(.05, .05, .05, .05), n.breaks = 7,       
+                      labels = c("1000\nbefore\npouring", "750", "500", "250", "0\noutcome\nshown", "-250", "-500"),
+                      limits = c(-1000, 500)) +
+      theme(
+        plot.margin = margin(1,.5,1,1, "cm"), 
+        axis.title.y = element_text(size = 14), 
+        axis.title.x = element_text(vjust = -4, size = 14), 
+        axis.text = element_text(size=12), 
+        strip.text = element_text(size = 14, face = "bold"), 
+        panel.spacing = unit(2, "lines"), 
+        legend.position = "none"
+        ) + facet_wrap(~motion_type, scales = "free", nrow=2)
+```
+
+## Interaction plots
+
+### Subset by Agent
+
+```{r interaction plots agent, warning=FALSE, message=FALSE}
+#| code-fold: true
+
+iplot_arm <- 
+  summary_statistics |> 
+  filter(agent == "Robotic Arm") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, 
+           shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type")+
+  scale_y_continuous(name = "Response time \nbefore outcome is shown (ms)", limits=c(0, 500)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1") + 
+  scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(legend.position="none", 
+        plot.margin = margin(1,1,1,1, "cm"), 
+        plot.title = element_text(hjust = 0.6, face = "bold", size = 16), 
+        axis.title.y = element_text(vjust = +3, size = 14),
+    axis.title.x = element_text(vjust = -1.5, size = 14), 
+    axis.text =element_text(size=14)) + 
+  ggtitle("Robotic Arm")
+
+iplot_humanoid <- summary_statistics |> 
+  filter(agent == "Humanoid") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, 
+           shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type") + 
+   scale_y_continuous(limits=c(0, 500)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(legend.position="none", 
+        plot.margin = margin(1,1,1,1, "cm"), 
+        plot.title = element_text(hjust = 0.6, face = "bold", size = 16), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_text(vjust = -1.5, size = 14), 
+        axis.text=element_text(size=14)) + 
+  ggtitle("Humanoid")
+
+iplot_human <- summary_statistics |> 
+  filter(agent == "Human") |>
+ggplot(aes(x = motion_type, y = mean, group = outcome_type, 
+           shape = outcome_type, color = outcome_type)) +
+  geom_point(size = 3) +
+  geom_line(aes(linetype = outcome_type))+
+  scale_x_discrete(name = "Motion Type")+
+ scale_y_continuous(limits=c(0, 500)) +
+  theme_classic() + scale_colour_brewer(palette = "Set1", direction = -1) +
+  theme(legend.position = c(0.9, 0.9),
+        legend.title = element_blank(), 
+        plot.margin = margin(1,1,1,1, "cm"), 
+        plot.title = element_text(hjust = 0.5, face = "bold", size = 16), 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_text(vjust = -1, size = 14), 
+        axis.text = element_text(size=14), 
+        legend.text = element_text(size = 14)) + 
+  ggtitle("Human")
+iplot_humanoid
+
+# use ggplotify::as.grob to convert plots into grobs first
+iplot_arm <- as.grob(iplot_arm)
+iplot_humanoid <- as.grob(iplot_humanoid)
+iplot_human <- as.grob(iplot_human)
+
+```
+
+```{r wrapper for setting titles for cowplots, message=FALSE, warning=FALSE}
+#| code-fold: true
+#| eval: false
+
+draw_label_theme <- function(label, theme = NULL, element = "text", ...) {
+  if (is.null(theme)) {
+    theme <- ggplot2::theme_get()
+  }
+  if (!element %in% names(theme)) {
+    stop("Element must be a valid ggplot theme element name")
+  }
+
+  elements <- ggplot2::calc_element(element, theme)
+
+  cowplot::draw_label(label, 
+                      fontfamily = elements$family,
+                      fontface = elements$face,
+                      colour = elements$color,
+                      size = elements$size,
+                      ...
+  )
+}
+
+# set titles
+iplot_agent_title <- ggdraw() +
+  draw_label_theme("Interaction Plots by Agent", 
+                   element = "plot.title",
+                   x = 0.05, hjust = 0, vjust = 1)
+```
+
+```{r interaction plot grid by agents, fig.width=15, fig.height=6, message=FALSE, warning=FALSE}
+#| code-fold: true
+# arrange 3 interaction plots horizontally using cowplot::plot_grid
+# remember to provide list() not vector 
+plot_grid(plotlist = list(iplot_arm, iplot_humanoid, iplot_human), 
+          align = "h", nrow = 1, rel_widths = c(2.2, 2, 2.1))
+
+```
+
+## 3x2x2 ANOVA
+
+```{r, message=FALSE, warning=FALSE}
+mod_322 <- aov_car(formula = mean_of_3_rounds~ motion_type * outcome_type * agent + Error(participant/(motion_type * outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = reactionTime)
+
+nice(mod_322)
+
+```
+
+## ANOVA for biological action
+
+**3 x 1 repeated measures ANOVA**
+
+```{r ANOVA 3 agent x DV, message=FALSE, warning=FALSE}
+
+subset_bio <- reactionTime |> filter(motion_type =="Biological")
+
+mod_bio <- aov_car(formula = mean_of_3_rounds~ outcome_type * agent + Error(participant/(outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = subset_bio)
+
+anova(mod_bio)
+# Anova Table (Type 3 tests)
+# 
+# Response: mean_of_3_rounds
+#                    num Df den Df   MSE       F      ges    Pr(>F)    
+# outcome_type       1.0000  51.00 33065 50.6254 0.126902 3.580e-09 ***
+# agent              1.9180  97.82 26929 34.5154 0.134045 9.043e-12 ***
+# outcome_type:agent 1.8382  93.75 22858  0.6009 0.002188    0.5369    
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+```
+
+### ANOVA for nonbio motion
+
+```{r, message=FALSE, warning=FALSE}
+subset_nonbio <- reactionTime |> filter(motion_type =="Nonbiological") 
+
+mod_nonbio <- aov_car(formula = mean_of_3_rounds~ outcome_type * agent + Error(participant/(outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = subset_nonbio)
+
+anova(mod_nonbio)
+nice(mod_nonbio)
+
+# Anova Table (Type 3 tests)
+# 
+# Response: mean_of_3_rounds
+#                    num Df den Df     MSE       F      ges    Pr(>F)    
+# outcome_type       1.0000 51.000  8558.5 15.0734 0.017884 0.0002985 ***
+# agent              1.8346 93.565 21030.5 57.0182 0.236948 4.101e-16 ***
+# outcome_type:agent 1.9008 96.942 15456.7  6.4939 0.026225 0.0026538 ** 
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+```
+
+## Check Assumptions for ANOVA
+
+#### 3. Check residuals normal distribution
+
+```{r residuals normal dist, message=FALSE, warning=FALSE}
+plotting_reactionTime_bio <- plotting |> 
+  filter(motion_type == "Biological")
+  
+plotting_reactionTime_nonbio <- plotting |> 
+  filter(motion_type == "Nonbiological")
+
+# whole model
+plot_model <- aov_car(formula = mean_of_3_rounds~ outcome_type * agent + Error(participant/(outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = plotting)
+#plotting
+#qqPlot(plot_model$lm$residuals)
+#check_normality(plot_model$lm$residuals)
+#plot(check_normality(plot_model), type = "qq")
+#shapiro.test(plot_model$lm$residuals)
+# 	Shapiro-Wilk normality test
+# 
+# data:  plot_model$lm$residuals
+# W = 0.98447, p-value = 0.1386
+
+# bio only
+model_bio <- aov_car(formula = mean_of_3_rounds ~ outcome_type * agent + Error(participant/(outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = plotting)
+
+# qqPlot(model_bio $lm$residuals)
+# check_normality(model_bio $lm$residuals)
+# check_sphericity(model_bio )
+# plot(check_normality(model_bio ), type = "qq")
+# shapiro.test(model_bio $lm$residuals)
+# 	Shapiro-Wilk normality test
+# 
+# data:  model_bio $lm$residuals
+# W = 0.99477, p-value = 0.6623
+
+summary(model_bio)
+
+# nonbio only
+plot_nonbio <- aov_car(formula = mean_of_3_rounds ~ outcome_type * agent + Error(participant/(outcome_type * agent)),
+              dv = "mean_of_3_rounds", 
+              es = "pes", 
+              type = 3, 
+              include_aov = TRUE, 
+              data = plotting)
+
+#qqPlot(plot_nonbio$lm$residuals)
+#check_normality(plot_nonbio$lm$residuals)
+check_sphericity(plot_nonbio)
+#plot(check_normality(plot_nonbio), type = "qq")
+shapiro.test(plot_nonbio$lm$residuals)
+# 	Shapiro-Wilk normality test
+# 
+# data:  plot_nonbio$lm$residuals
+# W = 0.9776, p-value = 0.01838
+summary(plot_nonbio)
+
+# gave up on converting the Mauchly w to chi-squared, cant report a statistic I dont understand
+k = 6 #repeated measures
+n = 30 
+W = 0.865 # De Mauchly's W
+d <- 1 -((2*((k - 1)^2)+(k-1)+2)/(6*(k-1)*(n-1)))
+Chikwadraat <- -1*(n-1)*d*log(W)
+df <- (k*(k-1)/2)-1
+pchisq(Chikwadraat, df, lower.tail=FALSE)
+
+```
+
+#### Equivalence
+
+```{r TOST check assumptions, message=FALSE, warning=FALSE}
+
+subset_bio_error <- reactionTime |> filter(motion_type == "Biological") |> filter(outcome_type == "Error") |> select(-stimulus)
+
+m_sd_bio_error <- subset_bio_error |> summarise(
+  mean = mean(mean_of_3_rounds, na.rm = T),
+  median = median(mean_of_3_rounds, na.rm = T), 
+  sd = sd(mean_of_3_rounds, na.rm = T)
+)
+moments::skewness(subset_bio_error$mean_of_3_rounds, na.rm = T)
+moments::kurtosis(subset_bio_error$mean_of_3_rounds, na.rm = T)
+
+mod <- aov_ez(id = "participant", dv = "mean_of_3_rounds", 
+              within = "agent", es = "pes", 
+              type = 3, include_aov = TRUE,
+              data = subset_bio_error)
+
+anova(mod)
+#       num Df den Df   MSE      F     ges    Pr(>F)    
+# agent 1.9936 101.67 20342 17.061 0.11834 4.209e-07 ***
+
+equ_ftest(Fstat = 17.061,
+          df1 = 1.9936,
+          df2 = 101.67,
+          eqbound = 0.035)
+# 	Equivalence Test from F-test
+# 
+# data:  Summary Statistics
+# F = 17.061, df1 = 1.9936, df2 = 101.6700, p-value = 0.9997
+# 95 percent confidence interval:
+#  0.1096739 0.3714795
+# sample estimates:
+# [1] 0.2506788
+
+```
+
+### Perform TOST between robots
+
+```{r, message=FALSE, warning=FALSE}
+subset_robots_TOST <- subset_bio_error |> filter(agent != "Human")
+
+# mean and SD of subset_robots
+mean_and_SD_robots <- subset_robots_TOST |> group_by(agent) |> 
+  summarise(mean = mean(mean_of_3_rounds, na.rm=T), sd = sd(mean_of_3_rounds, na.rm=T))
+# actual effect size = Cohen's d = (433.7096 - 438.7734) ⁄ 177.337259 = 0.028555. 
+
+res1a = t_TOST(x = subset(subset_robots_TOST, agent=="Robotic Arm")$mean_of_3_rounds,
+               y = subset(subset_robots_TOST, agent=="Humanoid")$mean_of_3_rounds, paired = TRUE,
+               eqb = 62, rm_correction = TRUE)
+print(res1a)
+describe(res1a)
+plot(res1a, type = "cd", ci_shades = c(.9,.95))
+
+t.test(mean_of_3_rounds ~ agent, 
+       paired = TRUE, alternative = "greater",
+       data = subset_robots_TOST, conf.level = 0.90)
+# 	Paired t-test
+# data:  mean_of_3_rounds by agent
+# t = 0.18663, df = 51, p-value = 0.4263
+# alternative hypothesis: true mean difference is greater than 0
+# 95 percent confidence interval:
+#  -40.39126       Inf
+# 90 percent confidence interval:
+# -30.16459       Inf
+# sample estimates:
+# mean difference 
+#        5.063856 
+t.test(mean_of_3_rounds ~ agent, 
+       paired = TRUE, alternative = "less",
+       data = subset_robots_TOST, conf.level = 0.90)
+
+# 	Paired t-test
+# data:  mean_of_3_rounds by agent
+# t = 0.18663, df = 51, p-value = 0.5737
+# alternative hypothesis: true mean difference is less than 0
+# 95 percent confidence interval:
+#      -Inf 50.51898
+# 90 percent confidence interval:
+#    -Inf 40.2923
+# sample estimates:
+# mean difference 
+#        5.063856 
+
+# Paired t-test
+# 
+# The equivalence test was significant, t(51) = 2.1, p = 0.02
+# The null hypothesis test was non-significant, t(51) = -0.187p = 0.85
+# NHST: don't reject null significance hypothesis that the effect is equal to zero 
+# TOST: reject null equivalence hypothesis
+#
+# t df p.value
+# t-test	-0.1866325	51	0.853	
+# TOST Lower	2.0984274	51	0.020	
+# TOST Upper	-2.4716923	51	0.008
+# 
+# Estimate SE C.I.
+# Raw	-5.06385601	27.1327687	[-50.519, 40.3913]	 90% confint
+# Hedges's g(z)	-0.02549847	0.1386976	[-0.2501, 0.1994]	 90% confint
+
+
+subset_robots_TOST$mean_of_3_rounds <- as.numeric(subset_robots_TOST$mean_of_3_rounds)
+leveneTest(mean_of_3_rounds ~ agent, 
+           data = subset_robots_TOST)
+# Levene's Test for Homogeneity of Variance (center = median)
+#        Df F value Pr(>F)
+# group   1  0.2562 0.6138
+#       102               
+
+
+subset_humanlike_TOST <- subset_bio_error |> filter(agent != "Robotic Arm")
+leveneTest(mean_of_3_rounds ~ agent, 
+           data = subset_humanlike_TOST)
+#        Df F value Pr(>F)
+# group   1  0.9894 0.3222
+#       102       
+# mean, sd humanlike 
+mean_and_SD_humans <- subset_humanlike_TOST |> group_by(agent) |> 
+  summarise(mean = mean(mean_of_3_rounds, na.rm=T), sd = sd(mean_of_3_rounds, na.rm=T))
+
+res1b = t_TOST(x = subset(subset_humanlike_TOST, agent=="Humanoid")$mean_of_3_rounds,
+               y = subset(subset_humanlike_TOST, agent=="Human")$mean_of_3_rounds, paired = TRUE,
+               eqb = 68)
+# current effect size 0.742795
+print(res1b)
+describe(res1b)
+
+cohens_d(mean_of_3_rounds~ agent,
+  paired = TRUE,
+  data = subset_humanlike_TOST
+)
+
+# Paired t-test
+# 
+# The equivalence test was non-significant, t(51) = 2.67, p = 0.99
+# The null hypothesis test was significant, t(51) = 5.06p < 0.01
+# NHST: reject null significance hypothesis that the effect is equal to zero 
+# TOST: don't reject null equivalence hypothesis
+# 
+# t df p.value
+# t-test	5.060036	51	< 0.001
+# TOST Lower	7.453862	51	< 0.001
+# TOST Upper	2.666209	51	0.995
+# 
+# Estimate SE# SE C.I. Conf. Level
+# Raw	          143.7374260	28.4064056 [96.1486, 191.3262]	0.9
+# Hedges's g(z)	0.6913222	  0.1543574 	[0.4371, 0.9396]	0.9
+
+```
+
+### ANOVA for nonbio
+
+```{r tost nonbio, message=FALSE, warning=FALSE}
+subset_nonbio_error <- reactionTime |>filter(outcome_type == "Error") |>
+  filter(motion_type == "Nonbiological") |> select(-stimulus)
+
+m_sd_nonbio_error <- subset_nonbio_error |> summarise(
+  mean = mean(mean_of_3_rounds, na.rm = T),
+  median = median(mean_of_3_rounds, na.rm = T), 
+  sd = sd(mean_of_3_rounds, na.rm = T)
+)
+moments::skewness(subset_nonbio_error$mean_of_3_rounds, na.rm = T)
+moments::kurtosis(subset_nonbio_error$mean_of_3_rounds, na.rm = T)
+
+mod_nonbio <- aov_ez(id = "participant", dv = "mean_of_3_rounds", 
+              within = "agent", es = "pes", 
+              type = 3, include_aov = TRUE,
+              data = subset_nonbio_error)
+
+anova(mod_nonbio)
+# Anova Table (Type 3 tests)
+# 
+# Response: mean_of_3_rounds
+#       num Df den Df   MSE      F     ges   Pr(>F)    
+# agent 1.9569 99.802 19513 48.271 0.33742 3.39e-15 ***
+subset_humanlike_nonbio <- subset_nonbio_error |> filter(agent != "Robotic Arm")
+
+```
+
+### More equivalence tests
+
+```{r, message=FALSE, warning=FALSE}
+#between robots
+subset_robots_nonbio <- subset_nonbio_error |> filter(agent != "Human")
+
+# mean and SD of subset_robots
+mean_and_SD_robots_nonbio <- subset_robots_nonbio |> group_by(agent) |> 
+  summarise(mean = mean(mean_of_3_rounds, na.rm=T), sd = sd(mean_of_3_rounds, na.rm=T))
+# actual effect size d= 0.748104
+
+res2a = t_TOST(x = subset(subset_robots_nonbio, agent=="Robotic Arm")$mean_of_3_rounds,
+               y = subset(subset_robots_nonbio, agent=="Humanoid")$mean_of_3_rounds, paired = TRUE,
+               eqb = 51.7)
+print(res2a)
+describe(res2a)
+
+t.test(mean_of_3_rounds ~ agent, 
+       paired = TRUE, alternative = "two.sided",
+       data = subset_humanlike_nonbio, conf.level = 0.90)
+robots_d <- effectsize::cohens_d(mean_of_3_rounds ~ agent, 
+                                 paired = TRUE, 
+                                 data = subset_robots_nonbio)
+# data:  mean_of_3_rounds by agent
+# t = -3.8575, df = 51, p-value = 0.000323
+# alternative hypothesis: true mean difference is not equal to 0
+# 90 percent confidence interval:
+#  -157.93782  -62.29229
+# sample estimates:
+# mean difference 
+#       -110.1151 
+
+# data:  mean_of_3_rounds by agent
+# t = 10.554, df = 51, p-value = 1.989e-14
+# alternative hypothesis: true mean difference is not equal to 0
+# 90 percent confidence interval:
+#  222.9332 307.0648
+# sample estimates:
+# mean difference 
+#         264.999 
+subset_robots_nonbio$mean_of_3_rounds <- as.numeric(subset_robots_nonbio$mean_of_3_rounds)
+leveneTest(mean_of_3_rounds ~ agent, 
+           data = subset_robots_nonbio)
+# Levene's Test for Homogeneity of Variance (center = median)
+#        Df F value  Pr(>F)   
+# group   1  9.3556 0.00284 **
+#       102                   
+
+power_t_TOST(
+  n = 52,
+  delta = 5.06,
+  eqb = 62,
+  alpha = .05,
+  type = "paired"
+)
+
+# mean, sd humanlike 
+mean_and_SD_nonbio_humans <- subset_humanlike_nonbio |> group_by(agent) |> 
+  summarise(mean = mean(mean_of_3_rounds, na.rm=T), sd = sd(mean_of_3_rounds, na.rm=T))
+# actual effect size d = 1.868161. Super large.
+
+res2b = t_TOST(x = subset(subset_humanlike_nonbio, agent=="Humanoid")$mean_of_3_rounds,
+               y = subset(subset_humanlike_nonbio, agent=="Human")$mean_of_3_rounds, paired = TRUE, 
+               eqb = 50)
+print(res2b)
+
+# Welch Two Sample t-test
+# 
+# The equivalence test was non-significant, t(89.5) = -7.7, p = 1
+# The null hypothesis test was significant, t(89.5) = -9.53p < 0.01
+# NHST: reject null significance hypothesis that the effect is equal to zero 
+# TOST: don't reject null equivalence hypothesis
+
+leveneTest(mean_of_3_rounds ~ agent, 
+           data = subset_humanlike_nonbio)
+#        Df F value  Pr(>F)   
+# group   1  9.4417 0.00272 **
+#       102           
+
+humanoid_resid <- subset_humanlike_nonbio |> 
+  filter(agent == "Humanoid") |> 
+  mutate(resid = mean_of_3_rounds - mean(mean_of_3_rounds))
+
+```
+
+```{r, message=FALSE, warning=FALSE}
+bio_human_resid <- plotting |> 
+  filter(motion_type == "Biological") |> filter(agent == "Human") |> filter(outcome_type == "Error") |> mutate(resid = mean_of_3_rounds - mean(mean_of_3_rounds, na.rm = T))
+
+qqPlot(bio_human_resid$resid)
+
+bio_humanoid_resid <- plotting |> 
+  filter(motion_type == "Biological") |> filter(agent == "Humanoid") |> filter(outcome_type == "Error") |> mutate(resid = mean_of_3_rounds - mean(mean_of_3_rounds, na.rm = T))
+
+qqPlot(bio_humanoid_resid$resid)
+
+nonbio_human_resid <- plotting |> 
+  filter(motion_type == "Nonbiological") |> filter(agent == "Human") |> filter(outcome_type == "Error") |> mutate(resid = mean_of_3_rounds - mean(mean_of_3_rounds, na.rm = T))
+
+qqPlot(nonbio_human_resid$resid)
+
+```

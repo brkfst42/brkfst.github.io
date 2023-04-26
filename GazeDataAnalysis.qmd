@@ -1,0 +1,829 @@
+---
+title: "Predictive Gaze Data Analysis"
+format:
+  html:
+    toc: true
+    toc_float: true
+    code-fold: show
+    code-summary: "Code"
+date: "`r Sys.Date()`"
+editor: visual
+---
+
+## Load packages, data
+
+```{r load packages, message=FALSE}
+#| code-fold: true
+library(tidyverse)
+library(easystats)
+library(pwr)
+library(rcompanion) #transformTukey, wilcoxonPairedRC
+#library(lsr) sessionInfo() 
+library(car)
+library(broom)
+library(afex) 
+library(emmeans)
+#library(cowplot, include.only = c('plot_grid', 'ggdraw'))
+#library(ggplotify, include.only= 'as.grob')
+library(TOSTER)
+library(performance)
+library(wesanderson)
+library(see)
+library(permuco)
+#library(lmPerm)
+library(lme4)
+library(resample)
+library(coin)
+library(rstatix)
+library(boot)
+library(lemon)
+
+predictiveGaze_preprocessed <- read_csv("predictiveGaze_aggregate.csv", 
+                                    show_col_types = FALSE)
+
+Gaze_summary_statistics <- predictiveGaze_preprocessed |>
+  group_by(condition) |>
+  summarise(median = median(mean_pred, na.rm = TRUE),
+            sd = sd(mean_pred, na.rm = TRUE),
+            se = sd/sqrt(length(mean_pred))) |>
+  mutate(agent = case_when(
+        str_detect(condition, "Robotic Arm") ~ "Robotic Arm", 
+        str_detect(condition, "Humanoid") ~ "Humanoid", 
+        str_detect(condition, "Human") ~ "Human", 
+  )) |> mutate(motion_type = case_when(
+    str_detect(condition, "Biological") ~ "Biological",
+    str_detect(condition, "Nonbiological") ~ "Nonbiological", 
+  ))
+
+```
+
+## Interaction plots
+
+```{r}
+
+  Gaze_summary_statistics |> 
+    mutate(agent = factor(agent, levels = c("Robotic Arm", "Humanoid", "Human"))) |> 
+  ggplot(aes(x = agent, y = median, group = motion_type, 
+             shape = motion_type, color = motion_type)) +
+  geom_point(size = 3, alpha = .8) +
+#  geom_errorbar(aes(ymin = median - se, ymax= median + se), width = .1)+
+  geom_line(aes(linetype = motion_type))+
+  scale_colour_manual(values = c("darkgreen", "brown")) + 
+  scale_x_discrete(name = "Agent")+
+  scale_y_continuous(name = "Predictive Gaze", limits=c(0, 1), expand =c(0, 0)) +
+  theme_linedraw() +
+  theme(
+    plot.margin = margin(1,1,1,1, "cm"), 
+    axis.title.y = element_text(vjust = +1, size = 13),
+    axis.title.x = element_text(vjust = -1.5, size = 13), 
+    axis.text =element_text(size=12), 
+    legend.title=element_blank()
+    )
+
+```
+
+### Interaction plot: by Motion Type
+
+```{r}
+
+  Gaze_summary_statistics |> 
+  ggplot(aes(x = motion_type, y = median, group = agent, shape = agent, 
+             color = agent)) +
+  geom_point(size = 3) +
+#  geom_errorbar(aes(ymin = median - se, ymax= median + se), width = .1) +
+  geom_line(aes(linetype = agent)) +
+    scale_colour_manual(values = wes_palette("Cavalcanti1", n = 3)) +
+  scale_x_discrete(name = "Motion Type") +
+  scale_y_continuous(name = "Predictive Gaze", limits=c(0, 1), expand =c(0, 0)) +
+  theme_linedraw() +
+  theme(
+    plot.margin = margin(1,1,1,1, "cm"), 
+    axis.title.y = element_text(vjust = +1, size = 13),
+    axis.title.x = element_text(vjust = -1.5, size = 13), 
+    axis.text =element_text(size=12), 
+    legend.title=element_blank()
+    )
+
+```
+
+## Histogram - ALL
+
+```{r, fig.width=10, fig.height=6}
+median(predictiveGaze_preprocessed$mean_pred, na.rm = TRUE)#0.3456667
+IQR(predictiveGaze_preprocessed$mean_pred, na.rm = TRUE) #0.5564583
+quantile(predictiveGaze_preprocessed$mean_pred, 0.25, na.rm =T) #0.07691667 
+quantile(predictiveGaze_preprocessed$mean_pred, 0.75, na.rm =T) #0.633375 
+
+predictiveGaze_preprocessed |> 
+  mutate(agent = factor(agent, levels = c("Robotic Arm", "Humanoid", "Human"))) |> 
+ggplot(aes(x=mean_pred)) + 
+  geom_histogram(aes(fill = agent), binwidth = .02) + 
+  theme_linedraw() +
+  theme(
+    plot.margin = margin(1,1,1,1, "cm"), 
+        axis.text = element_text(size = 12), 
+        axis.title.y = element_text(vjust = +2, size = 12),
+        axis.title.x = element_text(vjust = -2, size = 12)
+  ) +
+  scale_y_continuous(limits = c(0, 40), name = "Count") +
+  scale_x_continuous(name = "Predictive Gaze\n0 = Not at all predictive, 1 = Highly predictive", 
+                     labels =c("0", "0.25", "0.5", "0.75","1")) +
+  scale_fill_manual(values = wes_palette("Cavalcanti1", n = 3), name = "Agent") + 
+  geomtextpath::geom_textvline(label = "median = 0.346", xintercept = median(predictiveGaze_preprocessed$mean_pred, na.rm = TRUE),      color = "black", vjust = -.5, hjust = .9, fontface = "bold") +
+  geomtextpath::geom_textvline(label = "lower quartile = 0.077 ", xintercept = quantile(predictiveGaze_preprocessed$mean_pred, 0.25, na.rm = TRUE), color = "brown", vjust = -.5, hjust = .9, fontface = "bold") +
+   geomtextpath::geom_textvline(label = "upper quartile = 0.633", xintercept = quantile(predictiveGaze_preprocessed$mean_pred, 0.75, na.rm = TRUE), color = "brown", vjust = -.5, hjust = .9, fontface = "bold") 
+```
+
+### Histogram, facet by Agent
+
+```{r, fig.height =9, fig.width=10}
+#| code-fold: true
+
+predictiveGaze_preprocessed |> 
+  mutate(agent = factor(agent, levels = c("Robotic Arm", "Humanoid", "Human"))) |> 
+ggplot(aes(x=mean_pred)) +
+  geom_histogram(aes(fill = agent), binwidth = .02) +
+  scale_y_continuous(limits = c(0, 10), name = "Count") +
+  scale_x_continuous(name = "Predictive Gaze\n 0 = Not at all predictive, 1 = Highly predictive", labels =c("0", "0.25", "0.5", "0.75","1")) +
+#geom_density(color="red", linewidth = .5) + 
+    theme_linedraw() +
+    theme(
+        plot.margin = margin(1,1,1,1, "cm"), 
+        axis.text = element_text(size = 12), 
+        axis.title.y = element_text(vjust = +2, size = 12),
+        axis.title.x = element_text(vjust = -2, size = 12), 
+        strip.text = element_text(size = 12, face = "bold"), 
+        legend.position = "none"
+        ) + 
+  scale_fill_manual(values = wes_palette("Cavalcanti1", n = 3)) +  
+  facet_rep_wrap(~agent + motion_type, nrow = 3, repeat.tick.labels = TRUE) 
+```
+
+## Original plan: ANOVA 3 x 2 repeated measures
+
+```{r}
+mod_3x2_predictiveGaze <- aov_car(mean_pred ~ agent*motion_type + Error(participant/agent*motion_type), 
+               es = "pes", 
+               type = 3,                
+               include_aov = TRUE, 
+              data = predictiveGaze_preprocessed)
+
+print(mod_3x2_predictiveGaze)
+
+# Anova Table (Type 3 tests)
+# 
+# Response: mean_pred
+#              Effect          df  MSE      F  ges p.value
+# 1             agent 1.86, 53.96 0.05 4.73 * .023    .015
+# 2       motion_type       1, 29 0.05 5.10 * .012    .032
+# 3 agent:motion_type 1.85, 53.67 0.05   1.85 .008    .169
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘+’ 0.1 ‘ ’ 1
+# 
+# Sphericity correction method: GG 
+
+
+```
+
+```{r}
+mod_anova_table <- (mod_3x2_predictiveGaze$anova_table) |> 
+  tidy()
+
+nice(mod_3x2_predictiveGaze$anova_table)
+```
+
+### Check Assumptions - Normally Distributed Residuals
+
+```{r}
+qqPlot(mod_3x2_predictiveGaze$lm$residuals, 
+       ylab = "Residuals", 
+       xlab = "Norm Quantiles", id = FALSE)
+
+#shapiro.test(mod_3x2_predictiveGaze$lm$residuals)
+
+# 	Shapiro-Wilk normality test
+# 
+# data:  mod_3x2_predictiveGaze$lm$residuals
+# W = 0.94727, p-value = 4.577e-06
+
+```
+
+### Check Assumptions - Homogeneity of variances
+
+```{r}
+summary(mod_3x2_predictiveGaze) #nice() also works
+# Univariate Type III Repeated-Measures ANOVA Assuming Sphericity
+# 
+#                    Sum Sq num Df Error SS den Df F value    Pr(>F)    
+# (Intercept)       27.2753      1  12.5699     29 62.9270 9.504e-09 ***
+# agent              0.4442      2   2.7207     58  4.7346   0.01246 *  
+# motion_type        0.2355      1   1.3389     29  5.1010   0.03161 *  
+# agent:motion_type  0.1631      2   2.5500     58  1.8548   0.16565    
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+# 
+# Mauchly Tests for Sphericity
+# 
+#                   Test statistic p-value
+# agent                    0.92506 0.33602
+# agent:motion_type        0.91941 0.30841
+# 
+# 
+# Greenhouse-Geisser and Huynh-Feldt Corrections
+#  for Departure from Sphericity
+# 
+#                    GG eps Pr(>F[GG])  
+# agent             0.93028    0.01454 *
+# agent:motion_type 0.92542    0.16900  
+# ---
+# Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+# 
+#                      HF eps Pr(>F[HF])
+# agent             0.9914897 0.01269214
+# agent:motion_type 0.9857627 0.16629543
+
+performance::check_sphericity(mod_3x2_predictiveGaze) # variances are fine, assumption met
+# pretty qq plot from `performance`, envelop from `see`
+plot(check_normality(mod_3x2_predictiveGaze), type = "qq")
+
+# report Mauchly Test, supposedly need the Chi-squared
+# Convert Mauchly's w to chi-squared 
+# https://www.tutorialspoint.com/programming_example/8VnjGz/convert-mauchly-s-w-to-chi-squared
+k = 3 #repeated measures
+n = 30 
+W = 0.91941 # De Mauchly's W
+d <- 1 -((2*((k - 1)^2)+(k-1)+2)/(6*(k-1)*(n-1)))
+Chikwadraat <- -1*(n-1)*d*log(W)
+df <- (k*(k-1)/2)-1
+pchisq(Chikwadraat, df, lower.tail=FALSE)
+
+```
+
+```{r}
+plot(check_normality(mod_3x2_predictiveGaze), type = "density")
+```
+
+### Permutation Test as a non-parametric alternative to factorial ANOVA
+
+```{r}
+#| eval: false
+within_model <- aovperm(mean_pred ~ agent*motion_type + Error(participant/(agent*motion_type)), 
+                        np = 5000, 
+                        data = predictiveGaze_preprocessed)
+
+summary(within_model)
+# Resampling test using Rd_kheradPajouh_renaud to handle nuisance variables and 5000 permutations.
+# SSn dfn   SSd dfd    MSEn    MSEd     F parametric P(>F) resampled P(>F)
+# agent   0.4442   2 2.7 21  58 0.22209 0.04691 4.735 0.01246 0.0150
+# motion_type 0.2355   1 1.339  29 0.23551 0.04617 5.101 0.03161 0.0302
+# agent:motion_type 0.1631  2 2.550  58 0.08155 0.04397 1.855  0.16565          0.1638
+
+```
+
+## Bootstrap the Contrasts
+
+Needed only if I had significant interactions.
+
+```{r}
+#| eval: false
+#| code-fold: true
+# see tutorial https://www.r-bloggers.com/2019/08/bootstrapping-follow-up-contrasts-for-within-subject-anovas-part-2/
+# specify a random effects model
+do_model <- lmer(mean_pred ~ agent*motion_type + (1|participant), 
+                 data = predictiveGaze_preprocessed)
+
+# set up reference grid with univariate levels
+rg <- ref_grid(do_model, mult.levs = rm_levels)
+# output: 
+# 'emmGrid' object with variables:
+#     agent = Human, Humanoid, Robotic Arm
+#     motion_type = Biological, Nonbiological
+
+em_ <- emmeans(rg, ~ agent * motion_type)
+# em_
+# 
+#  agent       motion_type   emmean     SE df lower.CL upper.CL
+#  Human       Biological     0.385 0.0606 64    0.264    0.506
+#  Humanoid    Biological     0.468 0.0606 64    0.347    0.589
+#  Robotic Arm Biological     0.423 0.0606 64    0.302    0.544
+#  Human       Nonbiological  0.253 0.0606 64    0.132    0.374
+#  Humanoid    Nonbiological  0.373 0.0606 64    0.252    0.494
+#  Robotic Arm Nonbiological  0.433 0.0606 64    0.312    0.554
+
+c_motion <- contrast(em_, "pairwise", by = 'agent', adjust = "holm")
+c_ttest <- pairs(em_, "pairwise", by = 'motion_type', adjust = "holm")
+c_motion
+# motion_type = Biological:
+#  contrast               estimate     SE  df t.ratio p.value
+#  Human - Humanoid        -0.0825 0.0551 145  -1.497  0.4100
+#  Human - Robotic Arm     -0.0378 0.0551 145  -0.686  0.8377
+#  Humanoid - Robotic Arm   0.0447 0.0551 145   0.811  0.8377
+# 
+# motion_type = Nonbiological:
+#  contrast               estimate     SE  df t.ratio p.value
+#  Human - Humanoid        -0.1202 0.0551 145  -2.181  0.0616
+#  Human - Robotic Arm     -0.1801 0.0551 145  -3.268  0.0041
+#  Humanoid - Robotic Arm  -0.0599 0.0551 145  -1.087  0.2791
+# 
+# Degrees-of-freedom method: kenward-roger 
+# P value adjustment: tukey method for comparing a family of 3 estimates 
+
+  est_names <- c("Biological: Human - Humanoid", 
+                 "Biological: Human - Robotic Arm",
+                 "Biological: Humanoid-Robotic Arm", 
+                 "Nonbiological: Human - Humanoid", 
+                 "Nonbiological: Human - Robotic Arm",
+                 "Nonbiological: Humanoid-Robotic Arm")
+  est_values <- summary(c_motion)$estimate
+  names(est_values) <- est_names
+  est_values
+  
+```
+
+### Bootstrap follow-up analysis
+
+```{r}
+#| eval: false
+#| code-fold: true
+
+#write up all of the above as a function
+#do_model <- lmer(mean_pred ~ agent*motion_type + (1|participant), data = predictiveGaze_preprocessed)
+
+do_contrasts <- function(mod){
+  rg <- ref_grid(mod, mult.levs = rm_levels)
+  # get means
+  em_ <- emmeans(rg, ~ agent *motion_type)
+  # run pairwise, however we do not adjust = "holm" because the p-values are bootstrapped separately
+  c_motion <- contrast(em_, "pairwise", by = 'motion_type')
+  # extract the estimates
+  est_names <- c("Biological Human - Humanoid", 
+                 "Biological Human - Robotic Arm",
+                 "Biological Humanoid-Robotic Arm", 
+                 "Nonbiological Human - Humanoid", 
+                 "Nonbiological Human - Robotic Arm",
+                 "Nonbiological Humanoid-Robotic Arm")
+  est_values <- summary(c_motion)$estimate
+  names(est_values) <- est_names
+  est_values
+}
+
+# test the function
+do_contrasts(do_model) # great it works (same results as above chunk)
+
+ #       Biological Human - Humanoid     Biological Human - Robotic Arm 
+ #                       -0.08250556                        -0.03781111 
+ #   Biological Humanoid-Robotic Arm     Nonbiological Human - Humanoid 
+ #                        0.04469444                        -0.12023889 
+ # Nonbiological Human - Robotic Arm Nonbiological Humanoid-Robotic Arm 
+ #                       -0.18013333                        -0.05989444 
+
+```
+
+### Semiparametric bootstrap for means and confint (lme4::bootMer)
+
+```{r}
+#| eval: false
+#| code-fold: true
+# took only 70sec to run 500 simulations
+bootstrap_contrasts <-
+  bootMer(do_model, do_contrasts, 
+          use.u = TRUE, 
+          type="semiparametric", 
+          nsim = 1000)
+
+summary(bootstrap_contrasts)
+# Number of bootstrap replications R = 1000 
+#                                     original    bootBias   bootSE   bootMed
+# Biological Human - Humanoid        -0.082506  1.3266e-03 0.051614 -0.080861
+# Biological Human - Robotic Arm     -0.037811  1.1543e-03 0.051685 -0.037398
+# Biological Humanoid-Robotic Arm     0.044694 -1.7225e-04 0.051707  0.044932
+# Nonbiological Human - Humanoid     -0.120239 -1.2314e-03 0.048388 -0.121651
+# Nonbiological Human - Robotic Arm  -0.180133 -1.2510e-03 0.049617 -0.181364
+# Nonbiological Humanoid-Robotic Arm -0.059894 -1.9566e-05 0.050027 -0.060111
+
+confint(bootstrap_contrasts, type = "perc")
+#                                          2.5 %      97.5 %
+# Biological Human - Humanoid        -0.18015541  0.01944211
+# Biological Human - Robotic Arm     -0.13248929  0.06210557
+# Biological Humanoid-Robotic Arm    -0.05774259  0.14310688
+# Nonbiological Human - Humanoid     -0.22043167 -0.02339325
+# Nonbiological Human - Robotic Arm  -0.28805557 -0.08539110
+# Nonbiological Humanoid-Robotic Arm -0.15994182  0.03649128
+
+```
+
+### Bootstrapping p-values
+
+```{r}
+#| eval: false
+#| code-fold: true
+
+boot_pvalues <- function(x, side = c(0, -1, 1)) {
+  # Based on:
+  # https://blogs.sas.com/content/iml/2011/11/02/how-to-compute-p-values-for-a-bootstrap-distribution.html
+  side <- side[1]
+  x <- as.data.frame(x$t)
+
+  ps <- sapply(x, function(.x) {
+    s <- na.omit(.x)
+    s0 <- 0
+    N <- length(s)
+
+    if (side == 0) {
+      min((1 + sum(s >= s0)) / (N + 1),
+          (1 + sum(s <= s0)) / (N + 1)) * 2
+    } else if (side < 0) {
+      (1 + sum(s <= s0)) / (N + 1)
+    } else if (side > 0) {
+      (1 + sum(s >= s0)) / (N + 1)
+    }
+  })
+  
+  setNames(ps,colnames(x))
+}
+
+boot_pvalues(bootstrap_contrasts)
+ #       Biological Human - Humanoid     Biological Human - Robotic Arm 
+ #                       0.119880120                        0.485514486 
+ #   Biological Humanoid-Robotic Arm     Nonbiological Human - Humanoid 
+ #                       0.369630370                        0.011988012 
+ # Nonbiological Human - Robotic Arm Nonbiological Humanoid-Robotic Arm 
+ #                       0.001998002                        0.213786214 
+```
+
+## Equivalence tests
+
+### Friedman test
+
+```{r, warning=FALSE, message=FALSE}
+
+bio_only <- predictiveGaze_preprocessed |> filter(motion_type =="Biological")
+nonbio_only <- predictiveGaze_preprocessed |> filter(motion_type =="Nonbiological")
+# run friedman test
+
+mean_reporting <- predictiveGaze_preprocessed |> group_by(motion_type) |>
+get_summary_stats(mean_pred, type = "full") |> as_tibble()
+
+predictiveGaze_preprocessed$mean_pred <- as.numeric(predictiveGaze_preprocessed$mean_pred)
+  
+predictiveGaze_preprocessed$motion_type <- as.factor(predictiveGaze_preprocessed$motion_type) 
+
+df_friedman <- predictiveGaze_preprocessed |> 
+  dplyr::filter(motion_type =="Biological") |> 
+  dplyr::select(-c(motion_type, condition))
+
+# mean, sd under each agent
+mean_sd <- df_friedman |> group_by(agent) |> 
+  summarise(mean = mean(mean_pred), median = median(mean_pred), sd = sd(mean_pred))
+# Human	0.3853333			
+# Humanoid	0.4678389			
+# Robotic Arm	0.4231444	
+
+df_nonbio <- predictiveGaze_preprocessed |> 
+  dplyr::filter(motion_type =="Nonbiological") |> 
+  dplyr::select(-c(motion_type, condition))
+
+robots_nonbio_only <- df_nonbio |> filter(agent != "Human")
+human_lookalikes_nonbio <- df_nonbio |> filter(agent != "Robotic Arm")
+
+# figure out mean, sd for nonbio
+mean_sd_nonbio <- df_nonbio |> group_by(agent) |> 
+  summarise(mean = mean(mean_pred), median = median(mean_pred), sd = sd(mean_pred))
+# between robots and humanoid, actual effsize 0.174342. use .122. res=nonsig
+# between humanoid and human, actual effsize 0.407548. use .104. res = nonsig
+
+eqtest_nonbio_1a <- wilcox_TOST(formula = mean_pred ~ agent,
+                      data = robots_nonbio_only,
+                      paired = TRUE, 
+                      eqb = .15)
+print(eqtest_nonbio_1a)
+# Wilcoxon signed rank test with continuity correction
+# The equivalence test was non-significant V = 111.000, p = 5.31e-02
+# The null hypothesis test was non-significant V = 147.500, p = 6.96e-01
+
+eqtest_nonbio1b <- wilcox_TOST(formula = mean_pred ~ agent,
+                      data = human_lookalikes_nonbio,
+                      paired = TRUE, 
+                      eqb = .15)
+print(eqtest_nonbio1b)
+
+wilcox_test(formula = mean_pred ~ agent,
+  data = robots_nonbio_only, p.adjust.method = "holm",
+  alternative = "two.sided", paired = TRUE,
+)
+
+wilcox_effsize(
+  data = human_lookalikes_nonbio,
+  formula = mean_pred ~ agent,
+  paired = TRUE,
+  alternative = "two.sided",
+  nboot = 1000
+)
+
+leveneTest(mean_pred ~ agent, data = robots_nonbio_only)
+# Levene's Test for Homogeneity of Variance (center = median)
+#       Df F value Pr(>F)
+# group  1  0.7646 0.3855
+#       58   
+leveneTest(mean_pred ~ agent, data = human_lookalikes_nonbio)
+# Levene's Test for Homogeneity of Variance (center = median)
+#       Df F value Pr(>F)
+# group  1  1.9285 0.1702
+#       58   
+
+```
+
+```{r}
+
+res_friedman <- rstatix::friedman_test(mean_pred ~ agent | participant, data= df_friedman)
+
+res_nonbio <- rstatix::friedman_test(mean_pred ~ agent | participant, data= df_nonbio)
+
+print(res_nonbio)
+
+res_fried_confint <- friedman_effsize(
+  data=df_friedman,
+  formula=mean_pred ~ agent | participant,
+  ci = TRUE,
+  conf.level = 0.90,
+  ci.type = "perc",
+  nboot = 1000
+)
+
+# W = X2/N(K-1); where W is the Kendall’s W value; X2 is the Friedman test statistic value; N is the sample size. k is the number of measurements per subject (M. T. Tomczak and Tomczak 2014).
+# 
+# The Kendall’s W coefficient assumes the value from 0 (indicating no relationship) to 1 (indicating a perfect relationship).
+# 
+# Kendall’s W uses the Cohen’s interpretation guidelines of 0.1 - < 0.3 (small effect), 0.3 - < 0.5 (moderate effect) and >= 0.5 (large effect). Confidence intervals are calculated by bootstap.
+
+# subset data only for Robotic Arm and Humanoid
+robots_only <- df_friedman |> filter(agent != "Human")
+human_lookalikes_only <- df_friedman |> filter(agent != "Robotic Arm")
+
+figure_it_out <- robots_only |> group_by(agent) |> summarise(mean = mean(mean_pred), median = median(mean_pred), sd = sd(mean_pred))
+
+# run Wilcoxon matched-pairs signed rank test, the equivalence test version from TOSTER
+# the wilcoxon r is 0.1-0.3 small, 0.3-0.5 medium 
+eqtest <- wilcox_TOST(formula = mean_pred ~ agent,
+                      data = robots_only,
+                      paired = TRUE, 
+                      eqb = .153)
+# current effect size 0.1300854
+# 0.1202523 would give cohens d 0.35
+print(eqtest)
+describe(eqtest)
+
+
+```
+
+```{r}
+
+# Estimate C.I.
+# Median of Differences	0.07640882	[-0.0291, 0.159]	
+# Rank-Biserial Correlation	-0.28817204	[-0.5653, 0.0474]
+
+#Equivalence bounds (Cohen's d):
+# low eqbound: -0.125
+# high eqbound: 0.125
+
+# TOST confidence interval:
+# lower bound 90% CI: 
+# upper bound 90% CI: 
+
+#library(rcompanion)
+wilcoxonPairedRC(x = robots_only$mean_pred,
+                 g = robots_only$agent) #0.287 
+wilcoxonPairedR(x = robots_only$mean_pred,
+                 g = robots_only$agent) #0.251 
+
+
+
+eqtest_lookalike <- wilcox_TOST(formula = mean_pred ~ agent, 
+                                data = human_lookalikes_only, 
+                                paired = TRUE, 
+                                eqb = 0.151)
+#use 0.1205208 to give cohens d 0.35
+# current actual 0.2396014
+describe(eqtest_lookalike) 
+
+leveneTest(mean_pred ~ agent, data = robots_only)
+#       Df F value Pr(>F)
+# group  1  0.0017 0.9674
+#       58   
+leveneTest(mean_pred ~ agent, data = human_lookalikes_only)
+#      Df F value Pr(>F)
+# group  1  0.0571 0.8119
+#       58  
+
+#create residuals Robotic Arm condition (bio motion) 
+robots_resid <- robots_only |> 
+  filter(agent == "Robotic Arm") |> 
+  mutate(resid = mean_pred - mean(mean_pred))
+qqPlot(robots_resid$resid)
+shapiro_test(robots_resid$resid) #0.01833449	
+
+humanoid_resid <- robots_only |> 
+  filter(agent == "Humanoid") |> 
+  mutate(resid = mean_pred - mean(mean_pred))
+qqPlot(humanoid_resid$resid)
+shapiro_test(humanoid_resid$resid) #0.02329538
+
+human_resid <- human_lookalikes_only |> 
+    filter(agent == "Human") |> 
+  mutate(resid = mean_pred - mean(mean_pred))
+qqPlot(human_resid$resid)
+shapiro_test(human_resid$resid) #0.00229771
+
+```
+
+### Try the boot t TOST, 1000 replications
+
+```{r}
+#| eval: false
+
+boot_t_TOST(
+  formula = mean_pred ~ agent,data= robots_only,
+ # data = predictiveGaze_preprocessed,
+  hypothesis = "EQU",
+  paired = TRUE,
+  var.equal = TRUE,
+  eqb = .035,
+  eqbound_type = "raw",
+  R = 5000
+)
+
+# Bootstrapped Paired t-test
+# 
+# The equivalence test was non-significant, t(29) = 0.192, p = 5.47e-01
+# The null hypothesis test was non-significant, t(29) = 0.884, p = 4.42e-01
+# NHST: don't reject null significance hypothesis that the effect is equal to zero 
+# TOST: don't reject null equivalence hypothesis
+# 
+# TOST Results 
+# 
+# Effect Sizes 
+# Note: percentile bootstrap method utilized.
+
+#             t           df p-value
+# t-test	    0.8840446	29	0.404	
+# TOST Lower	1.5763355	29	0.077	
+# TOST Upper	0.1917536	29	0.586	
+
+#             Estimate    SE          C.I.                Conf Level
+# Raw           0.04469444	0.05012942	[-0.0446, 0.123]	0.9
+# Hedges's g(z)	0.15718704	0.20233060	[-0.1331, 0.5237]	0.9
+
+```
+
+### Main Effect Motion: Planned Comparison
+
+```{r}
+# if performing the usual Wilcoxon 
+
+df_motion_type <- predictiveGaze_preprocessed |> 
+  dplyr::select(-c(agent, condition)) |>  
+  dplyr::group_by(participant, motion_type) |> 
+  dplyr::mutate(pred = mean(mean_pred)) |> dplyr::select(-mean_pred) |> ungroup() |> distinct() 
+
+# Wilcox test reported
+play_results <- wilcox_test(formula = pred ~ motion_type,
+                            alternative = "two.sided",
+                            paired = TRUE, detailed = TRUE, 
+                            data = df_motion_type)
+
+# figuring out equivalence test - what should be the median diff
+wilcox_robots_result <- rstatix::wilcox_test(mean_pred ~ agent,
+  alternative = "t", paired = TRUE,
+  data = robots_only, detailed = TRUE
+)
+
+# whats the effect size 
+robots_only_effsize <- wilcox_effsize(
+  data = robots_only,
+  formula = mean_pred ~ agent,
+  paired = TRUE,
+  mu = 0,
+  ci = TRUE,
+  conf.level = 0.90,
+  ci.type = "perc",
+  nboot = 1000
+)
+
+```
+
+### Main effect Agent:
+
+```{r}
+df_agent <- predictiveGaze_preprocessed |> 
+  dplyr::select(-c(motion_type, condition)) |>  
+  group_by(participant, agent) |> 
+  dplyr::mutate(pred = mean(mean_pred)) |> dplyr::select(-mean_pred)  |> distinct() |> ungroup()
+
+#mean, mdn, sd
+df_agent_stats <- df_agent |> group_by(agent) |> 
+  summarise(mean = mean(pred), median = median(pred), sd = sd(pred))
+
+play_agent <- friedman_test(formula = pred ~ agent | participant,
+                            data = df_agent)
+# .y.   n     statistic   df  p           method
+# pred	30	  6.828829	  2	  0.03289566	Friedman test
+
+#t-test humanoid- robotic arm
+test1a <- df_agent |> filter(agent != "Human")
+res1a_gaze <- wilcox_test(formula = pred ~ agent, data = test1a, paired = TRUE, detailed = TRUE)
+#t-test humanoid-human
+test1b <- df_agent |> filter(agent != "Robotic Arm")
+res1b_gaze <- wilcox_test(formula = pred ~ agent, data = test1b, paired = TRUE, detailed = TRUE)
+#t-test human - robotic arm
+test1c <- df_agent |> filter(agent != "Humanoid")
+res1c_gaze <- wilcox_test(formula = pred ~ agent, data = test1c, paired = TRUE, detailed = TRUE)
+
+# res1c_effsize <- wilcox_effsize(
+#   data = test1c,
+#   formula = pred ~ agent,
+#   paired = TRUE,
+#   mu = 0,
+#   ci = TRUE,
+#   conf.level = 0.90,
+#   ci.type = "perc",
+#   nboot = 1000
+# )
+
+```
+
+### Perm the posthoc
+
+```{r, message=FALSE}
+
+predictiveGaze_preprocessed$mean_pred <- as.numeric(predictiveGaze_preprocessed$mean_pred)
+# all variables must be coded as factors
+predictiveGaze_preprocessed$motion_type <- as.factor(predictiveGaze_preprocessed$motion_type)
+#collapse the dataset by motion
+
+# motion type
+results <- wilcoxsign_test(pred ~ motion_type, 
+       data = df_motion_type, 
+       alternative = "two.sided", 
+       distribution = "approximate")
+
+pvalue(results)
+
+# agent
+results_agent_posthoc <- wilcoxsign_test(pred ~ motion_type, 
+       data = df_motion_type, 
+       alternative = "two.sided", 
+       distribution = "approximate")
+
+pvalue(results)
+midpvalue(results)
+statistic(results, type = "linear")
+
+res <- rstatix::wilcox_test(mean_pred ~ motion_type,
+       data = predictiveGaze_preprocessed,
+       alternative = "greater",
+       paired = TRUE, conf.level = 0.95,
+       detailed = TRUE)
+res
+# conf low 0.005683293 # conf.high Inf
+
+descriptive_stats_by_motion <- predictiveGaze_preprocessed |> group_by(motion_type) |> 
+  summarise(mean = mean(mean_pred), 
+            median = median(mean_pred), 
+            sd = sd(mean_pred))
+
+descriptive_stats_by_agent <- predictiveGaze_preprocessed |> group_by(agent) |> 
+  summarise(mean = mean(mean_pred), 
+            median = median(mean_pred), 
+            sd = sd(mean_pred))
+
+```
+
+```{r, message=FALSE}
+#| eval: false
+# boot
+
+
+boot_wilcoxon<- function(formula, data, indices) {
+    d <- data[indices,] # allows boot to select sample
+    fit <- pairwise_wilcox_test(formula, data=d,
+                                alternative = "greater")
+    return(fit$statistic)
+}
+
+boot_results <- boot(data = df_motion_type, 
+                statistic = boot_wilcoxon, 
+                R = 500, 
+                formula = pred ~ `motion_type`)
+
+sum(boot_results$t >= boot_results$t0)/1000
+# 0.49
+
+```
+
+### Descriptive Statistics
+
+```{r}
+# Kolmogorov-Smirnov stat testing against normal distribution
+ks.test(predictiveGaze_preprocessed$mean_pred, "pnorm")
+```

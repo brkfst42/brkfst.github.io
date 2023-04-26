@@ -1,0 +1,1537 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-04-26">
+
+<title>Predictive Gaze Data Analysis</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="GazeDataAnalysis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="GazeDataAnalysis_files/libs/quarto-html/quarto.js"></script>
+<script src="GazeDataAnalysis_files/libs/quarto-html/popper.min.js"></script>
+<script src="GazeDataAnalysis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="GazeDataAnalysis_files/libs/quarto-html/anchor.min.js"></script>
+<link href="GazeDataAnalysis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="GazeDataAnalysis_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="GazeDataAnalysis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="GazeDataAnalysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="GazeDataAnalysis_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+
+
+</head>
+
+<body>
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#load-packages-data" id="toc-load-packages-data" class="nav-link active" data-scroll-target="#load-packages-data">Load packages, data</a></li>
+  <li><a href="#interaction-plots" id="toc-interaction-plots" class="nav-link" data-scroll-target="#interaction-plots">Interaction plots</a>
+  <ul class="collapse">
+  <li><a href="#interaction-plot-by-motion-type" id="toc-interaction-plot-by-motion-type" class="nav-link" data-scroll-target="#interaction-plot-by-motion-type">Interaction plot: by Motion Type</a></li>
+  </ul></li>
+  <li><a href="#histogram---all" id="toc-histogram---all" class="nav-link" data-scroll-target="#histogram---all">Histogram - ALL</a>
+  <ul class="collapse">
+  <li><a href="#histogram-facet-by-agent" id="toc-histogram-facet-by-agent" class="nav-link" data-scroll-target="#histogram-facet-by-agent">Histogram, facet by Agent</a></li>
+  </ul></li>
+  <li><a href="#original-plan-anova-3-x-2-repeated-measures" id="toc-original-plan-anova-3-x-2-repeated-measures" class="nav-link" data-scroll-target="#original-plan-anova-3-x-2-repeated-measures">Original plan: ANOVA 3 x 2 repeated measures</a>
+  <ul class="collapse">
+  <li><a href="#check-assumptions---normally-distributed-residuals" id="toc-check-assumptions---normally-distributed-residuals" class="nav-link" data-scroll-target="#check-assumptions---normally-distributed-residuals">Check Assumptions - Normally Distributed Residuals</a></li>
+  <li><a href="#check-assumptions---homogeneity-of-variances" id="toc-check-assumptions---homogeneity-of-variances" class="nav-link" data-scroll-target="#check-assumptions---homogeneity-of-variances">Check Assumptions - Homogeneity of variances</a></li>
+  <li><a href="#permutation-test-as-a-non-parametric-alternative-to-factorial-anova" id="toc-permutation-test-as-a-non-parametric-alternative-to-factorial-anova" class="nav-link" data-scroll-target="#permutation-test-as-a-non-parametric-alternative-to-factorial-anova">Permutation Test as a non-parametric alternative to factorial ANOVA</a></li>
+  </ul></li>
+  <li><a href="#bootstrap-the-contrasts" id="toc-bootstrap-the-contrasts" class="nav-link" data-scroll-target="#bootstrap-the-contrasts">Bootstrap the Contrasts</a>
+  <ul class="collapse">
+  <li><a href="#bootstrap-follow-up-analysis" id="toc-bootstrap-follow-up-analysis" class="nav-link" data-scroll-target="#bootstrap-follow-up-analysis">Bootstrap follow-up analysis</a></li>
+  <li><a href="#semiparametric-bootstrap-for-means-and-confint-lme4bootmer" id="toc-semiparametric-bootstrap-for-means-and-confint-lme4bootmer" class="nav-link" data-scroll-target="#semiparametric-bootstrap-for-means-and-confint-lme4bootmer">Semiparametric bootstrap for means and confint (lme4::bootMer)</a></li>
+  <li><a href="#bootstrapping-p-values" id="toc-bootstrapping-p-values" class="nav-link" data-scroll-target="#bootstrapping-p-values">Bootstrapping p-values</a></li>
+  </ul></li>
+  <li><a href="#equivalence-tests" id="toc-equivalence-tests" class="nav-link" data-scroll-target="#equivalence-tests">Equivalence tests</a>
+  <ul class="collapse">
+  <li><a href="#friedman-test" id="toc-friedman-test" class="nav-link" data-scroll-target="#friedman-test">Friedman test</a></li>
+  <li><a href="#try-the-boot-t-tost-1000-replications" id="toc-try-the-boot-t-tost-1000-replications" class="nav-link" data-scroll-target="#try-the-boot-t-tost-1000-replications">Try the boot t TOST, 1000 replications</a></li>
+  <li><a href="#main-effect-motion-planned-comparison" id="toc-main-effect-motion-planned-comparison" class="nav-link" data-scroll-target="#main-effect-motion-planned-comparison">Main Effect Motion: Planned Comparison</a></li>
+  <li><a href="#main-effect-agent" id="toc-main-effect-agent" class="nav-link" data-scroll-target="#main-effect-agent">Main effect Agent:</a></li>
+  <li><a href="#perm-the-posthoc" id="toc-perm-the-posthoc" class="nav-link" data-scroll-target="#perm-the-posthoc">Perm the posthoc</a></li>
+  <li><a href="#descriptive-statistics" id="toc-descriptive-statistics" class="nav-link" data-scroll-target="#descriptive-statistics">Descriptive Statistics</a></li>
+  </ul></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Predictive Gaze Data Analysis</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 26, 2023</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+</header>
+
+<section id="load-packages-data" class="level2">
+<h2 class="anchored" data-anchor-id="load-packages-data">Load packages, data</h2>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(easystats)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pwr)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rcompanion) <span class="co">#transformTukey, wilcoxonPairedRC</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="co">#library(lsr) sessionInfo() </span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(car)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(broom)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(afex) </span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(emmeans)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="co">#library(cowplot, include.only = c('plot_grid', 'ggdraw'))</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="co">#library(ggplotify, include.only= 'as.grob')</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(TOSTER)</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(performance)</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(wesanderson)</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(see)</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(permuco)</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="co">#library(lmPerm)</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lme4)</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(resample)</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(coin)</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(rstatix)</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(boot)</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lemon)</span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed <span class="ot">&lt;-</span> <span class="fu">read_csv</span>(<span class="st">"predictiveGaze_aggregate.csv"</span>, </span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>                                    <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>Gaze_summary_statistics <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(condition) <span class="sc">|&gt;</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">median =</span> <span class="fu">median</span>(mean_pred, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>            <span class="at">se =</span> sd<span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">length</span>(mean_pred))) <span class="sc">|&gt;</span></span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">agent =</span> <span class="fu">case_when</span>(</span>
+<span id="cb1-34"><a href="#cb1-34" aria-hidden="true" tabindex="-1"></a>        <span class="fu">str_detect</span>(condition, <span class="st">"Robotic Arm"</span>) <span class="sc">~</span> <span class="st">"Robotic Arm"</span>, </span>
+<span id="cb1-35"><a href="#cb1-35" aria-hidden="true" tabindex="-1"></a>        <span class="fu">str_detect</span>(condition, <span class="st">"Humanoid"</span>) <span class="sc">~</span> <span class="st">"Humanoid"</span>, </span>
+<span id="cb1-36"><a href="#cb1-36" aria-hidden="true" tabindex="-1"></a>        <span class="fu">str_detect</span>(condition, <span class="st">"Human"</span>) <span class="sc">~</span> <span class="st">"Human"</span>, </span>
+<span id="cb1-37"><a href="#cb1-37" aria-hidden="true" tabindex="-1"></a>  )) <span class="sc">|&gt;</span> <span class="fu">mutate</span>(<span class="at">motion_type =</span> <span class="fu">case_when</span>(</span>
+<span id="cb1-38"><a href="#cb1-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(condition, <span class="st">"Biological"</span>) <span class="sc">~</span> <span class="st">"Biological"</span>,</span>
+<span id="cb1-39"><a href="#cb1-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">str_detect</span>(condition, <span class="st">"Nonbiological"</span>) <span class="sc">~</span> <span class="st">"Nonbiological"</span>, </span>
+<span id="cb1-40"><a href="#cb1-40" aria-hidden="true" tabindex="-1"></a>  ))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="interaction-plots" class="level2">
+<h2 class="anchored" data-anchor-id="interaction-plots">Interaction plots</h2>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>  Gaze_summary_statistics <span class="sc">|&gt;</span> </span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">agent =</span> <span class="fu">factor</span>(agent, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Robotic Arm"</span>, <span class="st">"Humanoid"</span>, <span class="st">"Human"</span>))) <span class="sc">|&gt;</span> </span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> agent, <span class="at">y =</span> median, <span class="at">group =</span> motion_type, </span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">shape =</span> motion_type, <span class="at">color =</span> motion_type)) <span class="sc">+</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">3</span>, <span class="at">alpha =</span> .<span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co">#  geom_errorbar(aes(ymin = median - se, ymax= median + se), width = .1)+</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">linetype =</span> motion_type))<span class="sc">+</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"darkgreen"</span>, <span class="st">"brown"</span>)) <span class="sc">+</span> </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_discrete</span>(<span class="at">name =</span> <span class="st">"Agent"</span>)<span class="sc">+</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">name =</span> <span class="st">"Predictive Gaze"</span>, <span class="at">limits=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">expand =</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_linedraw</span>() <span class="sc">+</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="st">"cm"</span>), </span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">+</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">13</span>),</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">-</span><span class="fl">1.5</span>, <span class="at">size =</span> <span class="dv">13</span>), </span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), </span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.title=</span><span class="fu">element_blank</span>()</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-1-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<section id="interaction-plot-by-motion-type" class="level3">
+<h3 class="anchored" data-anchor-id="interaction-plot-by-motion-type">Interaction plot: by Motion Type</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>  Gaze_summary_statistics <span class="sc">|&gt;</span> </span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> motion_type, <span class="at">y =</span> median, <span class="at">group =</span> agent, <span class="at">shape =</span> agent, </span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>             <span class="at">color =</span> agent)) <span class="sc">+</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#  geom_errorbar(aes(ymin = median - se, ymax= median + se), width = .1) +</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_line</span>(<span class="fu">aes</span>(<span class="at">linetype =</span> agent)) <span class="sc">+</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_colour_manual</span>(<span class="at">values =</span> <span class="fu">wes_palette</span>(<span class="st">"Cavalcanti1"</span>, <span class="at">n =</span> <span class="dv">3</span>)) <span class="sc">+</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_discrete</span>(<span class="at">name =</span> <span class="st">"Motion Type"</span>) <span class="sc">+</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">name =</span> <span class="st">"Predictive Gaze"</span>, <span class="at">limits=</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">1</span>), <span class="at">expand =</span><span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">0</span>)) <span class="sc">+</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_linedraw</span>() <span class="sc">+</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="st">"cm"</span>), </span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">+</span><span class="dv">1</span>, <span class="at">size =</span> <span class="dv">13</span>),</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">-</span><span class="fl">1.5</span>, <span class="at">size =</span> <span class="dv">13</span>), </span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">axis.text =</span><span class="fu">element_text</span>(<span class="at">size=</span><span class="dv">12</span>), </span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">legend.title=</span><span class="fu">element_blank</span>()</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-2-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="histogram---all" class="level2">
+<h2 class="anchored" data-anchor-id="histogram---all">Histogram - ALL</h2>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">median</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)<span class="co">#0.3456667</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3456667</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">IQR</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="at">na.rm =</span> <span class="cn">TRUE</span>) <span class="co">#0.5564583</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.5564583</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="fl">0.25</span>, <span class="at">na.rm =</span>T) <span class="co">#0.07691667 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>       25% 
+0.07691667 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">quantile</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="fl">0.75</span>, <span class="at">na.rm =</span>T) <span class="co">#0.633375 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     75% 
+0.633375 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">agent =</span> <span class="fu">factor</span>(agent, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Robotic Arm"</span>, <span class="st">"Humanoid"</span>, <span class="st">"Human"</span>))) <span class="sc">|&gt;</span> </span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>mean_pred)) <span class="sc">+</span> </span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">fill =</span> agent), <span class="at">binwidth =</span> .<span class="dv">02</span>) <span class="sc">+</span> </span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_linedraw</span>() <span class="sc">+</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(</span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="st">"cm"</span>), </span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>), </span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">+</span><span class="dv">2</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">size =</span> <span class="dv">12</span>)</span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">40</span>), <span class="at">name =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">name =</span> <span class="st">"Predictive Gaze</span><span class="sc">\n</span><span class="st">0 = Not at all predictive, 1 = Highly predictive"</span>, </span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span><span class="fu">c</span>(<span class="st">"0"</span>, <span class="st">"0.25"</span>, <span class="st">"0.5"</span>, <span class="st">"0.75"</span>,<span class="st">"1"</span>)) <span class="sc">+</span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">wes_palette</span>(<span class="st">"Cavalcanti1"</span>, <span class="at">n =</span> <span class="dv">3</span>), <span class="at">name =</span> <span class="st">"Agent"</span>) <span class="sc">+</span> </span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  geomtextpath<span class="sc">::</span><span class="fu">geom_textvline</span>(<span class="at">label =</span> <span class="st">"median = 0.346"</span>, <span class="at">xintercept =</span> <span class="fu">median</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),      <span class="at">color =</span> <span class="st">"black"</span>, <span class="at">vjust =</span> <span class="sc">-</span>.<span class="dv">5</span>, <span class="at">hjust =</span> .<span class="dv">9</span>, <span class="at">fontface =</span> <span class="st">"bold"</span>) <span class="sc">+</span></span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>  geomtextpath<span class="sc">::</span><span class="fu">geom_textvline</span>(<span class="at">label =</span> <span class="st">"lower quartile = 0.077 "</span>, <span class="at">xintercept =</span> <span class="fu">quantile</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="fl">0.25</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">color =</span> <span class="st">"brown"</span>, <span class="at">vjust =</span> <span class="sc">-</span>.<span class="dv">5</span>, <span class="at">hjust =</span> .<span class="dv">9</span>, <span class="at">fontface =</span> <span class="st">"bold"</span>) <span class="sc">+</span></span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>   geomtextpath<span class="sc">::</span><span class="fu">geom_textvline</span>(<span class="at">label =</span> <span class="st">"upper quartile = 0.633"</span>, <span class="at">xintercept =</span> <span class="fu">quantile</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="fl">0.75</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">color =</span> <span class="st">"brown"</span>, <span class="at">vjust =</span> <span class="sc">-</span>.<span class="dv">5</span>, <span class="at">hjust =</span> .<span class="dv">9</span>, <span class="at">fontface =</span> <span class="st">"bold"</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-3-1.png" class="img-fluid" width="960"></p>
+</div>
+</div>
+<section id="histogram-facet-by-agent" class="level3">
+<h3 class="anchored" data-anchor-id="histogram-facet-by-agent">Histogram, facet by Agent</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">agent =</span> <span class="fu">factor</span>(agent, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Robotic Arm"</span>, <span class="st">"Humanoid"</span>, <span class="st">"Human"</span>))) <span class="sc">|&gt;</span> </span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x=</span>mean_pred)) <span class="sc">+</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_histogram</span>(<span class="fu">aes</span>(<span class="at">fill =</span> agent), <span class="at">binwidth =</span> .<span class="dv">02</span>) <span class="sc">+</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="dv">10</span>), <span class="at">name =</span> <span class="st">"Count"</span>) <span class="sc">+</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">name =</span> <span class="st">"Predictive Gaze</span><span class="sc">\n</span><span class="st"> 0 = Not at all predictive, 1 = Highly predictive"</span>, <span class="at">labels =</span><span class="fu">c</span>(<span class="st">"0"</span>, <span class="st">"0.25"</span>, <span class="st">"0.5"</span>, <span class="st">"0.75"</span>,<span class="st">"1"</span>)) <span class="sc">+</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">#geom_density(color="red", linewidth = .5) + </span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_linedraw</span>() <span class="sc">+</span></span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme</span>(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">plot.margin =</span> <span class="fu">margin</span>(<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>,<span class="dv">1</span>, <span class="st">"cm"</span>), </span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>), </span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.y =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">+</span><span class="dv">2</span>, <span class="at">size =</span> <span class="dv">12</span>),</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>        <span class="at">axis.title.x =</span> <span class="fu">element_text</span>(<span class="at">vjust =</span> <span class="sc">-</span><span class="dv">2</span>, <span class="at">size =</span> <span class="dv">12</span>), </span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">strip.text =</span> <span class="fu">element_text</span>(<span class="at">size =</span> <span class="dv">12</span>, <span class="at">face =</span> <span class="st">"bold"</span>), </span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="at">legend.position =</span> <span class="st">"none"</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>        ) <span class="sc">+</span> </span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">wes_palette</span>(<span class="st">"Cavalcanti1"</span>, <span class="at">n =</span> <span class="dv">3</span>)) <span class="sc">+</span>  </span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">facet_rep_wrap</span>(<span class="sc">~</span>agent <span class="sc">+</span> motion_type, <span class="at">nrow =</span> <span class="dv">3</span>, <span class="at">repeat.tick.labels =</span> <span class="cn">TRUE</span>) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-4-1.png" class="img-fluid" width="960"></p>
+</div>
+</div>
+</section>
+</section>
+<section id="original-plan-anova-3-x-2-repeated-measures" class="level2">
+<h2 class="anchored" data-anchor-id="original-plan-anova-3-x-2-repeated-measures">Original plan: ANOVA 3 x 2 repeated measures</h2>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>mod_3x2_predictiveGaze <span class="ot">&lt;-</span> <span class="fu">aov_car</span>(mean_pred <span class="sc">~</span> agent<span class="sc">*</span>motion_type <span class="sc">+</span> <span class="fu">Error</span>(participant<span class="sc">/</span>agent<span class="sc">*</span>motion_type), </span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">es =</span> <span class="st">"pes"</span>, </span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">type =</span> <span class="dv">3</span>,                </span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">include_aov =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>              <span class="at">data =</span> predictiveGaze_preprocessed)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(mod_3x2_predictiveGaze)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Anova Table (Type 3 tests)
+
+Response: mean_pred
+             Effect          df  MSE      F  ges p.value
+1             agent 1.86, 53.96 0.05 4.73 * .023    .015
+2       motion_type       1, 29 0.05 5.10 * .012    .032
+3 agent:motion_type 1.85, 53.67 0.05   1.85 .008    .169
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+
+Sphericity correction method: GG </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Anova Table (Type 3 tests)</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Response: mean_pred</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="co">#              Effect          df  MSE      F  ges p.value</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 1             agent 1.86, 53.96 0.05 4.73 * .023    .015</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># 2       motion_type       1, 29 0.05 5.10 * .012    .032</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="co"># 3 agent:motion_type 1.85, 53.67 0.05   1.85 .008    .169</span></span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ---</span></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘+’ 0.1 ‘ ’ 1</span></span>
+<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Sphericity correction method: GG </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>mod_anova_table <span class="ot">&lt;-</span> (mod_3x2_predictiveGaze<span class="sc">$</span>anova_table) <span class="sc">|&gt;</span> </span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tidy</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in tidy.anova((mod_3x2_predictiveGaze$anova_table)): The following
+column names in ANOVA output were not recognized or transformed: num.Df,
+den.Df, MSE, ges</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">nice</span>(mod_3x2_predictiveGaze<span class="sc">$</span>anova_table)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Anova Table (Type 3 tests)
+
+Response: mean_pred
+             Effect          df  MSE      F  ges p.value
+1             agent 1.86, 53.96 0.05 4.73 * .023    .015
+2       motion_type       1, 29 0.05 5.10 * .012    .032
+3 agent:motion_type 1.85, 53.67 0.05   1.85 .008    .169
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '+' 0.1 ' ' 1
+
+Sphericity correction method: GG </code></pre>
+</div>
+</div>
+<section id="check-assumptions---normally-distributed-residuals" class="level3">
+<h3 class="anchored" data-anchor-id="check-assumptions---normally-distributed-residuals">Check Assumptions - Normally Distributed Residuals</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">qqPlot</span>(mod_3x2_predictiveGaze<span class="sc">$</span>lm<span class="sc">$</span>residuals, </span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">ylab =</span> <span class="st">"Residuals"</span>, </span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">xlab =</span> <span class="st">"Norm Quantiles"</span>, <span class="at">id =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="co">#shapiro.test(mod_3x2_predictiveGaze$lm$residuals)</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="co">#   Shapiro-Wilk normality test</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="co"># data:  mod_3x2_predictiveGaze$lm$residuals</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="co"># W = 0.94727, p-value = 4.577e-06</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="check-assumptions---homogeneity-of-variances" class="level3">
+<h3 class="anchored" data-anchor-id="check-assumptions---homogeneity-of-variances">Check Assumptions - Homogeneity of variances</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(mod_3x2_predictiveGaze) <span class="co">#nice() also works</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Univariate Type III Repeated-Measures ANOVA Assuming Sphericity
+
+                   Sum Sq num Df Error SS den Df F value    Pr(&gt;F)    
+(Intercept)       27.2753      1  12.5699     29 62.9270 9.504e-09 ***
+agent              0.4442      2   2.7207     58  4.7346   0.01246 *  
+motion_type        0.2355      1   1.3389     29  5.1010   0.03161 *  
+agent:motion_type  0.1631      2   2.5500     58  1.8548   0.16565    
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+
+Mauchly Tests for Sphericity
+
+                  Test statistic p-value
+agent                    0.92506 0.33602
+agent:motion_type        0.91941 0.30841
+
+
+Greenhouse-Geisser and Huynh-Feldt Corrections
+ for Departure from Sphericity
+
+                   GG eps Pr(&gt;F[GG])  
+agent             0.93028    0.01454 *
+agent:motion_type 0.92542    0.16900  
+---
+Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+                     HF eps Pr(&gt;F[HF])
+agent             0.9914897 0.01269214
+agent:motion_type 0.9857627 0.16629543</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Univariate Type III Repeated-Measures ANOVA Assuming Sphericity</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co">#                    Sum Sq num Df Error SS den Df F value    Pr(&gt;F)    </span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a><span class="co"># (Intercept)       27.2753      1  12.5699     29 62.9270 9.504e-09 ***</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a><span class="co"># agent              0.4442      2   2.7207     58  4.7346   0.01246 *  </span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># motion_type        0.2355      1   1.3389     29  5.1010   0.03161 *  </span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a><span class="co"># agent:motion_type  0.1631      2   2.5500     58  1.8548   0.16565    </span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ---</span></span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span></span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Mauchly Tests for Sphericity</span></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-14"><a href="#cb25-14" aria-hidden="true" tabindex="-1"></a><span class="co">#                   Test statistic p-value</span></span>
+<span id="cb25-15"><a href="#cb25-15" aria-hidden="true" tabindex="-1"></a><span class="co"># agent                    0.92506 0.33602</span></span>
+<span id="cb25-16"><a href="#cb25-16" aria-hidden="true" tabindex="-1"></a><span class="co"># agent:motion_type        0.91941 0.30841</span></span>
+<span id="cb25-17"><a href="#cb25-17" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-18"><a href="#cb25-18" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-19"><a href="#cb25-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Greenhouse-Geisser and Huynh-Feldt Corrections</span></span>
+<span id="cb25-20"><a href="#cb25-20" aria-hidden="true" tabindex="-1"></a><span class="co">#  for Departure from Sphericity</span></span>
+<span id="cb25-21"><a href="#cb25-21" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-22"><a href="#cb25-22" aria-hidden="true" tabindex="-1"></a><span class="co">#                    GG eps Pr(&gt;F[GG])  </span></span>
+<span id="cb25-23"><a href="#cb25-23" aria-hidden="true" tabindex="-1"></a><span class="co"># agent             0.93028    0.01454 *</span></span>
+<span id="cb25-24"><a href="#cb25-24" aria-hidden="true" tabindex="-1"></a><span class="co"># agent:motion_type 0.92542    0.16900  </span></span>
+<span id="cb25-25"><a href="#cb25-25" aria-hidden="true" tabindex="-1"></a><span class="co"># ---</span></span>
+<span id="cb25-26"><a href="#cb25-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1</span></span>
+<span id="cb25-27"><a href="#cb25-27" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb25-28"><a href="#cb25-28" aria-hidden="true" tabindex="-1"></a><span class="co">#                      HF eps Pr(&gt;F[HF])</span></span>
+<span id="cb25-29"><a href="#cb25-29" aria-hidden="true" tabindex="-1"></a><span class="co"># agent             0.9914897 0.01269214</span></span>
+<span id="cb25-30"><a href="#cb25-30" aria-hidden="true" tabindex="-1"></a><span class="co"># agent:motion_type 0.9857627 0.16629543</span></span>
+<span id="cb25-31"><a href="#cb25-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-32"><a href="#cb25-32" aria-hidden="true" tabindex="-1"></a>performance<span class="sc">::</span><span class="fu">check_sphericity</span>(mod_3x2_predictiveGaze) <span class="co"># variances are fine, assumption met</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>OK: Data seems to be spherical (p &gt; 0.308).</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="co"># pretty qq plot from `performance`, envelop from `see`</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">check_normality</span>(mod_3x2_predictiveGaze), <span class="at">type =</span> <span class="st">"qq"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="co"># report Mauchly Test, supposedly need the Chi-squared</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Convert Mauchly's w to chi-squared </span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="co"># https://www.tutorialspoint.com/programming_example/8VnjGz/convert-mauchly-s-w-to-chi-squared</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>k <span class="ot">=</span> <span class="dv">3</span> <span class="co">#repeated measures</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>n <span class="ot">=</span> <span class="dv">30</span> </span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>W <span class="ot">=</span> <span class="fl">0.91941</span> <span class="co"># De Mauchly's W</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>d <span class="ot">&lt;-</span> <span class="dv">1</span> <span class="sc">-</span>((<span class="dv">2</span><span class="sc">*</span>((k <span class="sc">-</span> <span class="dv">1</span>)<span class="sc">^</span><span class="dv">2</span>)<span class="sc">+</span>(k<span class="dv">-1</span>)<span class="sc">+</span><span class="dv">2</span>)<span class="sc">/</span>(<span class="dv">6</span><span class="sc">*</span>(k<span class="dv">-1</span>)<span class="sc">*</span>(n<span class="dv">-1</span>)))</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>Chikwadraat <span class="ot">&lt;-</span> <span class="sc">-</span><span class="dv">1</span><span class="sc">*</span>(n<span class="dv">-1</span>)<span class="sc">*</span>d<span class="sc">*</span><span class="fu">log</span>(W)</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>df <span class="ot">&lt;-</span> (k<span class="sc">*</span>(k<span class="dv">-1</span>)<span class="sc">/</span><span class="dv">2</span>)<span class="sc">-</span><span class="dv">1</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a><span class="fu">pchisq</span>(Chikwadraat, df, <span class="at">lower.tail=</span><span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.3084105</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(<span class="fu">check_normality</span>(mod_3x2_predictiveGaze), <span class="at">type =</span> <span class="st">"density"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-9-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+</section>
+<section id="permutation-test-as-a-non-parametric-alternative-to-factorial-anova" class="level3">
+<h3 class="anchored" data-anchor-id="permutation-test-as-a-non-parametric-alternative-to-factorial-anova">Permutation Test as a non-parametric alternative to factorial ANOVA</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>within_model <span class="ot">&lt;-</span> <span class="fu">aovperm</span>(mean_pred <span class="sc">~</span> agent<span class="sc">*</span>motion_type <span class="sc">+</span> <span class="fu">Error</span>(participant<span class="sc">/</span>(agent<span class="sc">*</span>motion_type)), </span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">np =</span> <span class="dv">5000</span>, </span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">data =</span> predictiveGaze_preprocessed)</span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(within_model)</span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Resampling test using Rd_kheradPajouh_renaud to handle nuisance variables and 5000 permutations.</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a><span class="co"># SSn dfn   SSd dfd    MSEn    MSEd     F parametric P(&gt;F) resampled P(&gt;F)</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a><span class="co"># agent   0.4442   2 2.7 21  58 0.22209 0.04691 4.735 0.01246 0.0150</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a><span class="co"># motion_type 0.2355   1 1.339  29 0.23551 0.04617 5.101 0.03161 0.0302</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="co"># agent:motion_type 0.1631  2 2.550  58 0.08155 0.04397 1.855  0.16565          0.1638</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+<section id="bootstrap-the-contrasts" class="level2">
+<h2 class="anchored" data-anchor-id="bootstrap-the-contrasts">Bootstrap the Contrasts</h2>
+<p>Needed only if I had significant interactions.</p>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="co"># see tutorial https://www.r-bloggers.com/2019/08/bootstrapping-follow-up-contrasts-for-within-subject-anovas-part-2/</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a><span class="co"># specify a random effects model</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>do_model <span class="ot">&lt;-</span> <span class="fu">lmer</span>(mean_pred <span class="sc">~</span> agent<span class="sc">*</span>motion_type <span class="sc">+</span> (<span class="dv">1</span><span class="sc">|</span>participant), </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>                 <span class="at">data =</span> predictiveGaze_preprocessed)</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a><span class="co"># set up reference grid with univariate levels</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>rg <span class="ot">&lt;-</span> <span class="fu">ref_grid</span>(do_model, <span class="at">mult.levs =</span> rm_levels)</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a><span class="co"># output: </span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 'emmGrid' object with variables:</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a><span class="co">#     agent = Human, Humanoid, Robotic Arm</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a><span class="co">#     motion_type = Biological, Nonbiological</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>em_ <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(rg, <span class="sc">~</span> agent <span class="sc">*</span> motion_type)</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a><span class="co"># em_</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a><span class="co">#  agent       motion_type   emmean     SE df lower.CL upper.CL</span></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human       Biological     0.385 0.0606 64    0.264    0.506</span></span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a><span class="co">#  Humanoid    Biological     0.468 0.0606 64    0.347    0.589</span></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a><span class="co">#  Robotic Arm Biological     0.423 0.0606 64    0.302    0.544</span></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human       Nonbiological  0.253 0.0606 64    0.132    0.374</span></span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a><span class="co">#  Humanoid    Nonbiological  0.373 0.0606 64    0.252    0.494</span></span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a><span class="co">#  Robotic Arm Nonbiological  0.433 0.0606 64    0.312    0.554</span></span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>c_motion <span class="ot">&lt;-</span> <span class="fu">contrast</span>(em_, <span class="st">"pairwise"</span>, <span class="at">by =</span> <span class="st">'agent'</span>, <span class="at">adjust =</span> <span class="st">"holm"</span>)</span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a>c_ttest <span class="ot">&lt;-</span> <span class="fu">pairs</span>(em_, <span class="st">"pairwise"</span>, <span class="at">by =</span> <span class="st">'motion_type'</span>, <span class="at">adjust =</span> <span class="st">"holm"</span>)</span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>c_motion</span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a><span class="co"># motion_type = Biological:</span></span>
+<span id="cb32-28"><a href="#cb32-28" aria-hidden="true" tabindex="-1"></a><span class="co">#  contrast               estimate     SE  df t.ratio p.value</span></span>
+<span id="cb32-29"><a href="#cb32-29" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human - Humanoid        -0.0825 0.0551 145  -1.497  0.4100</span></span>
+<span id="cb32-30"><a href="#cb32-30" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human - Robotic Arm     -0.0378 0.0551 145  -0.686  0.8377</span></span>
+<span id="cb32-31"><a href="#cb32-31" aria-hidden="true" tabindex="-1"></a><span class="co">#  Humanoid - Robotic Arm   0.0447 0.0551 145   0.811  0.8377</span></span>
+<span id="cb32-32"><a href="#cb32-32" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb32-33"><a href="#cb32-33" aria-hidden="true" tabindex="-1"></a><span class="co"># motion_type = Nonbiological:</span></span>
+<span id="cb32-34"><a href="#cb32-34" aria-hidden="true" tabindex="-1"></a><span class="co">#  contrast               estimate     SE  df t.ratio p.value</span></span>
+<span id="cb32-35"><a href="#cb32-35" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human - Humanoid        -0.1202 0.0551 145  -2.181  0.0616</span></span>
+<span id="cb32-36"><a href="#cb32-36" aria-hidden="true" tabindex="-1"></a><span class="co">#  Human - Robotic Arm     -0.1801 0.0551 145  -3.268  0.0041</span></span>
+<span id="cb32-37"><a href="#cb32-37" aria-hidden="true" tabindex="-1"></a><span class="co">#  Humanoid - Robotic Arm  -0.0599 0.0551 145  -1.087  0.2791</span></span>
+<span id="cb32-38"><a href="#cb32-38" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb32-39"><a href="#cb32-39" aria-hidden="true" tabindex="-1"></a><span class="co"># Degrees-of-freedom method: kenward-roger </span></span>
+<span id="cb32-40"><a href="#cb32-40" aria-hidden="true" tabindex="-1"></a><span class="co"># P value adjustment: tukey method for comparing a family of 3 estimates </span></span>
+<span id="cb32-41"><a href="#cb32-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-42"><a href="#cb32-42" aria-hidden="true" tabindex="-1"></a>  est_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Biological: Human - Humanoid"</span>, </span>
+<span id="cb32-43"><a href="#cb32-43" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Biological: Human - Robotic Arm"</span>,</span>
+<span id="cb32-44"><a href="#cb32-44" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Biological: Humanoid-Robotic Arm"</span>, </span>
+<span id="cb32-45"><a href="#cb32-45" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological: Human - Humanoid"</span>, </span>
+<span id="cb32-46"><a href="#cb32-46" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological: Human - Robotic Arm"</span>,</span>
+<span id="cb32-47"><a href="#cb32-47" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological: Humanoid-Robotic Arm"</span>)</span>
+<span id="cb32-48"><a href="#cb32-48" aria-hidden="true" tabindex="-1"></a>  est_values <span class="ot">&lt;-</span> <span class="fu">summary</span>(c_motion)<span class="sc">$</span>estimate</span>
+<span id="cb32-49"><a href="#cb32-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(est_values) <span class="ot">&lt;-</span> est_names</span>
+<span id="cb32-50"><a href="#cb32-50" aria-hidden="true" tabindex="-1"></a>  est_values</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<section id="bootstrap-follow-up-analysis" class="level3">
+<h3 class="anchored" data-anchor-id="bootstrap-follow-up-analysis">Bootstrap follow-up analysis</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co">#write up all of the above as a function</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a><span class="co">#do_model &lt;- lmer(mean_pred ~ agent*motion_type + (1|participant), data = predictiveGaze_preprocessed)</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>do_contrasts <span class="ot">&lt;-</span> <span class="cf">function</span>(mod){</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>  rg <span class="ot">&lt;-</span> <span class="fu">ref_grid</span>(mod, <span class="at">mult.levs =</span> rm_levels)</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># get means</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  em_ <span class="ot">&lt;-</span> <span class="fu">emmeans</span>(rg, <span class="sc">~</span> agent <span class="sc">*</span>motion_type)</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># run pairwise, however we do not adjust = "holm" because the p-values are bootstrapped separately</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>  c_motion <span class="ot">&lt;-</span> <span class="fu">contrast</span>(em_, <span class="st">"pairwise"</span>, <span class="at">by =</span> <span class="st">'motion_type'</span>)</span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># extract the estimates</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>  est_names <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"Biological Human - Humanoid"</span>, </span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Biological Human - Robotic Arm"</span>,</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Biological Humanoid-Robotic Arm"</span>, </span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological Human - Humanoid"</span>, </span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological Human - Robotic Arm"</span>,</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>                 <span class="st">"Nonbiological Humanoid-Robotic Arm"</span>)</span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>  est_values <span class="ot">&lt;-</span> <span class="fu">summary</span>(c_motion)<span class="sc">$</span>estimate</span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">names</span>(est_values) <span class="ot">&lt;-</span> est_names</span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>  est_values</span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a><span class="co"># test the function</span></span>
+<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a><span class="fu">do_contrasts</span>(do_model) <span class="co"># great it works (same results as above chunk)</span></span>
+<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a> <span class="co">#       Biological Human - Humanoid     Biological Human - Robotic Arm </span></span>
+<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a> <span class="co">#                       -0.08250556                        -0.03781111 </span></span>
+<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a> <span class="co">#   Biological Humanoid-Robotic Arm     Nonbiological Human - Humanoid </span></span>
+<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a> <span class="co">#                        0.04469444                        -0.12023889 </span></span>
+<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a> <span class="co"># Nonbiological Human - Robotic Arm Nonbiological Humanoid-Robotic Arm </span></span>
+<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a> <span class="co">#                       -0.18013333                        -0.05989444 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="semiparametric-bootstrap-for-means-and-confint-lme4bootmer" class="level3">
+<h3 class="anchored" data-anchor-id="semiparametric-bootstrap-for-means-and-confint-lme4bootmer">Semiparametric bootstrap for means and confint (lme4::bootMer)</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># took only 70sec to run 500 simulations</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>bootstrap_contrasts <span class="ot">&lt;-</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">bootMer</span>(do_model, do_contrasts, </span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>          <span class="at">use.u =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>          <span class="at">type=</span><span class="st">"semiparametric"</span>, </span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>          <span class="at">nsim =</span> <span class="dv">1000</span>)</span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a><span class="fu">summary</span>(bootstrap_contrasts)</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Number of bootstrap replications R = 1000 </span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a><span class="co">#                                     original    bootBias   bootSE   bootMed</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Human - Humanoid        -0.082506  1.3266e-03 0.051614 -0.080861</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Human - Robotic Arm     -0.037811  1.1543e-03 0.051685 -0.037398</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Humanoid-Robotic Arm     0.044694 -1.7225e-04 0.051707  0.044932</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Human - Humanoid     -0.120239 -1.2314e-03 0.048388 -0.121651</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Human - Robotic Arm  -0.180133 -1.2510e-03 0.049617 -0.181364</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Humanoid-Robotic Arm -0.059894 -1.9566e-05 0.050027 -0.060111</span></span>
+<span id="cb34-17"><a href="#cb34-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-18"><a href="#cb34-18" aria-hidden="true" tabindex="-1"></a><span class="fu">confint</span>(bootstrap_contrasts, <span class="at">type =</span> <span class="st">"perc"</span>)</span>
+<span id="cb34-19"><a href="#cb34-19" aria-hidden="true" tabindex="-1"></a><span class="co">#                                          2.5 %      97.5 %</span></span>
+<span id="cb34-20"><a href="#cb34-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Human - Humanoid        -0.18015541  0.01944211</span></span>
+<span id="cb34-21"><a href="#cb34-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Human - Robotic Arm     -0.13248929  0.06210557</span></span>
+<span id="cb34-22"><a href="#cb34-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Biological Humanoid-Robotic Arm    -0.05774259  0.14310688</span></span>
+<span id="cb34-23"><a href="#cb34-23" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Human - Humanoid     -0.22043167 -0.02339325</span></span>
+<span id="cb34-24"><a href="#cb34-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Human - Robotic Arm  -0.28805557 -0.08539110</span></span>
+<span id="cb34-25"><a href="#cb34-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Nonbiological Humanoid-Robotic Arm -0.15994182  0.03649128</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="bootstrapping-p-values" class="level3">
+<h3 class="anchored" data-anchor-id="bootstrapping-p-values">Bootstrapping p-values</h3>
+<div class="cell">
+<details>
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>boot_pvalues <span class="ot">&lt;-</span> <span class="cf">function</span>(x, <span class="at">side =</span> <span class="fu">c</span>(<span class="dv">0</span>, <span class="sc">-</span><span class="dv">1</span>, <span class="dv">1</span>)) {</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Based on:</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># https://blogs.sas.com/content/iml/2011/11/02/how-to-compute-p-values-for-a-bootstrap-distribution.html</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  side <span class="ot">&lt;-</span> side[<span class="dv">1</span>]</span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>  x <span class="ot">&lt;-</span> <span class="fu">as.data.frame</span>(x<span class="sc">$</span>t)</span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>  ps <span class="ot">&lt;-</span> <span class="fu">sapply</span>(x, <span class="cf">function</span>(.x) {</span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    s <span class="ot">&lt;-</span> <span class="fu">na.omit</span>(.x)</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    s0 <span class="ot">&lt;-</span> <span class="dv">0</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>    N <span class="ot">&lt;-</span> <span class="fu">length</span>(s)</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> (side <span class="sc">==</span> <span class="dv">0</span>) {</span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>      <span class="fu">min</span>((<span class="dv">1</span> <span class="sc">+</span> <span class="fu">sum</span>(s <span class="sc">&gt;=</span> s0)) <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">1</span>),</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>          (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">sum</span>(s <span class="sc">&lt;=</span> s0)) <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">1</span>)) <span class="sc">*</span> <span class="dv">2</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (side <span class="sc">&lt;</span> <span class="dv">0</span>) {</span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>      (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">sum</span>(s <span class="sc">&lt;=</span> s0)) <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>    } <span class="cf">else</span> <span class="cf">if</span> (side <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>      (<span class="dv">1</span> <span class="sc">+</span> <span class="fu">sum</span>(s <span class="sc">&gt;=</span> s0)) <span class="sc">/</span> (N <span class="sc">+</span> <span class="dv">1</span>)</span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a>  })</span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">setNames</span>(ps,<span class="fu">colnames</span>(x))</span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a><span class="fu">boot_pvalues</span>(bootstrap_contrasts)</span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a> <span class="co">#       Biological Human - Humanoid     Biological Human - Robotic Arm </span></span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a> <span class="co">#                       0.119880120                        0.485514486 </span></span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a> <span class="co">#   Biological Humanoid-Robotic Arm     Nonbiological Human - Humanoid </span></span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a> <span class="co">#                       0.369630370                        0.011988012 </span></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a> <span class="co"># Nonbiological Human - Robotic Arm Nonbiological Humanoid-Robotic Arm </span></span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a> <span class="co">#                       0.001998002                        0.213786214 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+</section>
+<section id="equivalence-tests" class="level2">
+<h2 class="anchored" data-anchor-id="equivalence-tests">Equivalence tests</h2>
+<section id="friedman-test" class="level3">
+<h3 class="anchored" data-anchor-id="friedman-test">Friedman test</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>bio_only <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> <span class="fu">filter</span>(motion_type <span class="sc">==</span><span class="st">"Biological"</span>)</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>nonbio_only <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> <span class="fu">filter</span>(motion_type <span class="sc">==</span><span class="st">"Nonbiological"</span>)</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a><span class="co"># run friedman test</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>mean_reporting <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> <span class="fu">group_by</span>(motion_type) <span class="sc">|&gt;</span></span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a><span class="fu">get_summary_stats</span>(mean_pred, <span class="at">type =</span> <span class="st">"full"</span>) <span class="sc">|&gt;</span> <span class="fu">as_tibble</span>()</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed<span class="sc">$</span>mean_pred <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred)</span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed<span class="sc">$</span>motion_type <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(predictiveGaze_preprocessed<span class="sc">$</span>motion_type) </span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>df_friedman <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(motion_type <span class="sc">==</span><span class="st">"Biological"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(motion_type, condition))</span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a><span class="co"># mean, sd under each agent</span></span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>mean_sd <span class="ot">&lt;-</span> df_friedman <span class="sc">|&gt;</span> <span class="fu">group_by</span>(agent) <span class="sc">|&gt;</span> </span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(mean_pred), <span class="at">median =</span> <span class="fu">median</span>(mean_pred), <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred))</span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Human 0.3853333           </span></span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Humanoid  0.4678389           </span></span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Robotic Arm   0.4231444   </span></span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a>df_nonbio <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(motion_type <span class="sc">==</span><span class="st">"Nonbiological"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(motion_type, condition))</span>
+<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a>robots_nonbio_only <span class="ot">&lt;-</span> df_nonbio <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Human"</span>)</span>
+<span id="cb36-28"><a href="#cb36-28" aria-hidden="true" tabindex="-1"></a>human_lookalikes_nonbio <span class="ot">&lt;-</span> df_nonbio <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Robotic Arm"</span>)</span>
+<span id="cb36-29"><a href="#cb36-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-30"><a href="#cb36-30" aria-hidden="true" tabindex="-1"></a><span class="co"># figure out mean, sd for nonbio</span></span>
+<span id="cb36-31"><a href="#cb36-31" aria-hidden="true" tabindex="-1"></a>mean_sd_nonbio <span class="ot">&lt;-</span> df_nonbio <span class="sc">|&gt;</span> <span class="fu">group_by</span>(agent) <span class="sc">|&gt;</span> </span>
+<span id="cb36-32"><a href="#cb36-32" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(mean_pred), <span class="at">median =</span> <span class="fu">median</span>(mean_pred), <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred))</span>
+<span id="cb36-33"><a href="#cb36-33" aria-hidden="true" tabindex="-1"></a><span class="co"># between robots and humanoid, actual effsize 0.174342. use .122. res=nonsig</span></span>
+<span id="cb36-34"><a href="#cb36-34" aria-hidden="true" tabindex="-1"></a><span class="co"># between humanoid and human, actual effsize 0.407548. use .104. res = nonsig</span></span>
+<span id="cb36-35"><a href="#cb36-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-36"><a href="#cb36-36" aria-hidden="true" tabindex="-1"></a>eqtest_nonbio_1a <span class="ot">&lt;-</span> <span class="fu">wilcox_TOST</span>(<span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb36-37"><a href="#cb36-37" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> robots_nonbio_only,</span>
+<span id="cb36-38"><a href="#cb36-38" aria-hidden="true" tabindex="-1"></a>                      <span class="at">paired =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb36-39"><a href="#cb36-39" aria-hidden="true" tabindex="-1"></a>                      <span class="at">eqb =</span> .<span class="dv">15</span>)</span>
+<span id="cb36-40"><a href="#cb36-40" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(eqtest_nonbio_1a)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Wilcoxon signed rank test with continuity correction
+
+The equivalence test was non-significant V = 111.000, p = 5.31e-02
+The null hypothesis test was non-significant V = 147.500, p = 6.96e-01
+NHST: don't reject null significance hypothesis that the effect is equal to zero 
+TOST: don't reject null equivalence hypothesis
+
+TOST Results 
+           Test Statistic p.value
+NHST                147.5   0.696
+TOST Lower          311.5   0.053
+TOST Upper          111.0   0.006
+
+Effect Sizes 
+                          Estimate              C.I. Conf. Level
+Median of Differences     -0.03336 [-0.2267, 0.1045]         0.9
+Rank-Biserial Correlation  0.09677  [-0.242, 0.4145]         0.9</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Wilcoxon signed rank test with continuity correction</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The equivalence test was non-significant V = 111.000, p = 5.31e-02</span></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a><span class="co"># The null hypothesis test was non-significant V = 147.500, p = 6.96e-01</span></span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>eqtest_nonbio1b <span class="ot">&lt;-</span> <span class="fu">wilcox_TOST</span>(<span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> human_lookalikes_nonbio,</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">paired =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>                      <span class="at">eqb =</span> .<span class="dv">15</span>)</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(eqtest_nonbio1b)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Wilcoxon signed rank test with continuity correction
+
+The equivalence test was non-significant V = 35.000, p = 3.87e-01
+The null hypothesis test was significant V = 61.000, p = 3.79e-03
+NHST: reject null significance hypothesis that the effect is equal to zero 
+TOST: don't reject null equivalence hypothesis
+
+TOST Results 
+           Test Statistic p.value
+NHST                   61   0.004
+TOST Lower            247   0.387
+TOST Upper             35 &lt; 0.001
+
+Effect Sizes 
+                          Estimate               C.I. Conf. Level
+Median of Differences      -0.1703 [-0.2432, -0.0729]         0.9
+Rank-Biserial Correlation   0.6129   [0.3536, 0.7847]         0.9</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wilcox_test</span>(<span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> robots_nonbio_only, <span class="at">p.adjust.method =</span> <span class="st">"holm"</span>,</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span>, <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 7
+  .y.       group1   group2         n1    n2 statistic     p
+* &lt;chr&gt;     &lt;chr&gt;    &lt;chr&gt;       &lt;int&gt; &lt;int&gt;     &lt;dbl&gt; &lt;dbl&gt;
+1 mean_pred Humanoid Robotic Arm    30    30      148. 0.696</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wilcox_effsize</span>(</span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> human_lookalikes_nonbio,</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">alternative =</span> <span class="st">"two.sided"</span>,</span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">nboot =</span> <span class="dv">1000</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 7
+  .y.       group1 group2   effsize    n1    n2 magnitude
+* &lt;chr&gt;     &lt;chr&gt;  &lt;chr&gt;      &lt;dbl&gt; &lt;int&gt; &lt;int&gt; &lt;ord&gt;    
+1 mean_pred Human  Humanoid   0.536    30    30 large    </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">leveneTest</span>(mean_pred <span class="sc">~</span> agent, <span class="at">data =</span> robots_nonbio_only)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Levene's Test for Homogeneity of Variance (center = median)
+      Df F value Pr(&gt;F)
+group  1  0.7646 0.3855
+      58               </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Levene's Test for Homogeneity of Variance (center = median)</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a><span class="co">#       Df F value Pr(&gt;F)</span></span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a><span class="co"># group  1  0.7646 0.3855</span></span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a><span class="co">#       58   </span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a><span class="fu">leveneTest</span>(mean_pred <span class="sc">~</span> agent, <span class="at">data =</span> human_lookalikes_nonbio)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Levene's Test for Homogeneity of Variance (center = median)
+      Df F value Pr(&gt;F)
+group  1  1.9285 0.1702
+      58               </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Levene's Test for Homogeneity of Variance (center = median)</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a><span class="co">#       Df F value Pr(&gt;F)</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a><span class="co"># group  1  1.9285 0.1702</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="co">#       58   </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>res_friedman <span class="ot">&lt;-</span> rstatix<span class="sc">::</span><span class="fu">friedman_test</span>(mean_pred <span class="sc">~</span> agent <span class="sc">|</span> participant, <span class="at">data=</span> df_friedman)</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>res_nonbio <span class="ot">&lt;-</span> rstatix<span class="sc">::</span><span class="fu">friedman_test</span>(mean_pred <span class="sc">~</span> agent <span class="sc">|</span> participant, <span class="at">data=</span> df_nonbio)</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(res_nonbio)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 6
+  .y.           n statistic    df       p method       
+* &lt;chr&gt;     &lt;int&gt;     &lt;dbl&gt; &lt;dbl&gt;   &lt;dbl&gt; &lt;chr&gt;        
+1 mean_pred    30      12.5     2 0.00194 Friedman test</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb51"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>res_fried_confint <span class="ot">&lt;-</span> <span class="fu">friedman_effsize</span>(</span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">data=</span>df_friedman,</span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula=</span>mean_pred <span class="sc">~</span> agent <span class="sc">|</span> participant,</span>
+<span id="cb51-4"><a href="#cb51-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">ci =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb51-5"><a href="#cb51-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">conf.level =</span> <span class="fl">0.90</span>,</span>
+<span id="cb51-6"><a href="#cb51-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">ci.type =</span> <span class="st">"perc"</span>,</span>
+<span id="cb51-7"><a href="#cb51-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">nboot =</span> <span class="dv">1000</span></span>
+<span id="cb51-8"><a href="#cb51-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb51-9"><a href="#cb51-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-10"><a href="#cb51-10" aria-hidden="true" tabindex="-1"></a><span class="co"># W = X2/N(K-1); where W is the Kendall’s W value; X2 is the Friedman test statistic value; N is the sample size. k is the number of measurements per subject (M. T. Tomczak and Tomczak 2014).</span></span>
+<span id="cb51-11"><a href="#cb51-11" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb51-12"><a href="#cb51-12" aria-hidden="true" tabindex="-1"></a><span class="co"># The Kendall’s W coefficient assumes the value from 0 (indicating no relationship) to 1 (indicating a perfect relationship).</span></span>
+<span id="cb51-13"><a href="#cb51-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb51-14"><a href="#cb51-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Kendall’s W uses the Cohen’s interpretation guidelines of 0.1 - &lt; 0.3 (small effect), 0.3 - &lt; 0.5 (moderate effect) and &gt;= 0.5 (large effect). Confidence intervals are calculated by bootstap.</span></span>
+<span id="cb51-15"><a href="#cb51-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-16"><a href="#cb51-16" aria-hidden="true" tabindex="-1"></a><span class="co"># subset data only for Robotic Arm and Humanoid</span></span>
+<span id="cb51-17"><a href="#cb51-17" aria-hidden="true" tabindex="-1"></a>robots_only <span class="ot">&lt;-</span> df_friedman <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Human"</span>)</span>
+<span id="cb51-18"><a href="#cb51-18" aria-hidden="true" tabindex="-1"></a>human_lookalikes_only <span class="ot">&lt;-</span> df_friedman <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Robotic Arm"</span>)</span>
+<span id="cb51-19"><a href="#cb51-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-20"><a href="#cb51-20" aria-hidden="true" tabindex="-1"></a>figure_it_out <span class="ot">&lt;-</span> robots_only <span class="sc">|&gt;</span> <span class="fu">group_by</span>(agent) <span class="sc">|&gt;</span> <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(mean_pred), <span class="at">median =</span> <span class="fu">median</span>(mean_pred), <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred))</span>
+<span id="cb51-21"><a href="#cb51-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb51-22"><a href="#cb51-22" aria-hidden="true" tabindex="-1"></a><span class="co"># run Wilcoxon matched-pairs signed rank test, the equivalence test version from TOSTER</span></span>
+<span id="cb51-23"><a href="#cb51-23" aria-hidden="true" tabindex="-1"></a><span class="co"># the wilcoxon r is 0.1-0.3 small, 0.3-0.5 medium </span></span>
+<span id="cb51-24"><a href="#cb51-24" aria-hidden="true" tabindex="-1"></a>eqtest <span class="ot">&lt;-</span> <span class="fu">wilcox_TOST</span>(<span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb51-25"><a href="#cb51-25" aria-hidden="true" tabindex="-1"></a>                      <span class="at">data =</span> robots_only,</span>
+<span id="cb51-26"><a href="#cb51-26" aria-hidden="true" tabindex="-1"></a>                      <span class="at">paired =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb51-27"><a href="#cb51-27" aria-hidden="true" tabindex="-1"></a>                      <span class="at">eqb =</span> .<span class="dv">153</span>)</span>
+<span id="cb51-28"><a href="#cb51-28" aria-hidden="true" tabindex="-1"></a><span class="co"># current effect size 0.1300854</span></span>
+<span id="cb51-29"><a href="#cb51-29" aria-hidden="true" tabindex="-1"></a><span class="co"># 0.1202523 would give cohens d 0.35</span></span>
+<span id="cb51-30"><a href="#cb51-30" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(eqtest)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+Wilcoxon signed rank test with continuity correction
+
+The equivalence test was significant V = 131.000, p = 1.88e-02
+The null hypothesis test was non-significant V = 193.000, p = 2.25e-01
+NHST: don't reject null significance hypothesis that the effect is equal to zero 
+TOST: reject null equivalence hypothesis
+
+TOST Results 
+           Test Statistic p.value
+NHST                  193   0.225
+TOST Lower            413 &lt; 0.001
+TOST Upper            131   0.019
+
+Effect Sizes 
+                          Estimate              C.I. Conf. Level
+Median of Differences      0.07641  [-0.0291, 0.159]         0.9
+Rank-Biserial Correlation -0.28817 [-0.5653, 0.0474]         0.9</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb53"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(eqtest)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Using the Wilcoxon signed rank test with continuity correction, a null hypothesis significance test (NHST), and a equivalence test, via two one-sided tests (TOST), were performed with an alpha-level of 0.05. These tested the null hypotheses that true location shift is equal to 0 (NHST), and true location shift is more extreme than -0.153 and 0.153 (TOST). The equivalence test was significant, WMW = 131, p = 0.019 (location shift = 0.076 90% C.I.[-0.0291, 0.159]; Rank-Biserial Correlation = -0.288 90% C.I.[-0.565, 0.047]). At the desired error rate, it can be stated that the true location shift is between -0.153 and 0.153."</code></pre>
+</div>
+</div>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb55"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Estimate C.I.</span></span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Median of Differences 0.07640882  [-0.0291, 0.159]    </span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Rank-Biserial Correlation -0.28817204 [-0.5653, 0.0474]</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Equivalence bounds (Cohen's d):</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a><span class="co"># low eqbound: -0.125</span></span>
+<span id="cb55-7"><a href="#cb55-7" aria-hidden="true" tabindex="-1"></a><span class="co"># high eqbound: 0.125</span></span>
+<span id="cb55-8"><a href="#cb55-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-9"><a href="#cb55-9" aria-hidden="true" tabindex="-1"></a><span class="co"># TOST confidence interval:</span></span>
+<span id="cb55-10"><a href="#cb55-10" aria-hidden="true" tabindex="-1"></a><span class="co"># lower bound 90% CI: </span></span>
+<span id="cb55-11"><a href="#cb55-11" aria-hidden="true" tabindex="-1"></a><span class="co"># upper bound 90% CI: </span></span>
+<span id="cb55-12"><a href="#cb55-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb55-13"><a href="#cb55-13" aria-hidden="true" tabindex="-1"></a><span class="co">#library(rcompanion)</span></span>
+<span id="cb55-14"><a href="#cb55-14" aria-hidden="true" tabindex="-1"></a><span class="fu">wilcoxonPairedRC</span>(<span class="at">x =</span> robots_only<span class="sc">$</span>mean_pred,</span>
+<span id="cb55-15"><a href="#cb55-15" aria-hidden="true" tabindex="-1"></a>                 <span class="at">g =</span> robots_only<span class="sc">$</span>agent) <span class="co">#0.287 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>   rc 
+0.287 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb57"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wilcoxonPairedR</span>(<span class="at">x =</span> robots_only<span class="sc">$</span>mean_pred,</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>                 <span class="at">g =</span> robots_only<span class="sc">$</span>agent) <span class="co">#0.251 </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>    r 
+0.251 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a>eqtest_lookalike <span class="ot">&lt;-</span> <span class="fu">wilcox_TOST</span>(<span class="at">formula =</span> mean_pred <span class="sc">~</span> agent, </span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>                                <span class="at">data =</span> human_lookalikes_only, </span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>                                <span class="at">paired =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>                                <span class="at">eqb =</span> <span class="fl">0.151</span>)</span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a><span class="co">#use 0.1205208 to give cohens d 0.35</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a><span class="co"># current actual 0.2396014</span></span>
+<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a><span class="fu">describe</span>(eqtest_lookalike) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Using the Wilcoxon signed rank test with continuity correction, a null hypothesis significance test (NHST), and a equivalence test, via two one-sided tests (TOST), were performed with an alpha-level of 0.05. These tested the null hypotheses that true location shift is equal to 0 (NHST), and true location shift is more extreme than -0.151 and 0.151 (TOST). Both the equivalence test (p = 0.094), and the NHST (p = 0.09) were not significant (location shift = -0.101 90% C.I.[-0.189, -0.00371]; Rank-Biserial Correlation = 0.338 90% C.I.[0.007, 0.601]). Therefore, the results are inconclusive: neither null hypothesis can be rejected."</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="fu">leveneTest</span>(mean_pred <span class="sc">~</span> agent, <span class="at">data =</span> robots_only)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in leveneTest.default(y = y, group = group, ...): group coerced to
+factor.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Levene's Test for Homogeneity of Variance (center = median)
+      Df F value Pr(&gt;F)
+group  1  0.0017 0.9674
+      58               </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="co">#       Df F value Pr(&gt;F)</span></span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a><span class="co"># group  1  0.0017 0.9674</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a><span class="co">#       58   </span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a><span class="fu">leveneTest</span>(mean_pred <span class="sc">~</span> agent, <span class="at">data =</span> human_lookalikes_only)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in leveneTest.default(y = y, group = group, ...): group coerced to
+factor.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Levene's Test for Homogeneity of Variance (center = median)
+      Df F value Pr(&gt;F)
+group  1  0.0571 0.8119
+      58               </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb67"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="co">#      Df F value Pr(&gt;F)</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a><span class="co"># group  1  0.0571 0.8119</span></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a><span class="co">#       58  </span></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a><span class="co">#create residuals Robotic Arm condition (bio motion) </span></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>robots_resid <span class="ot">&lt;-</span> robots_only <span class="sc">|&gt;</span> </span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(agent <span class="sc">==</span> <span class="st">"Robotic Arm"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">resid =</span> mean_pred <span class="sc">-</span> <span class="fu">mean</span>(mean_pred))</span>
+<span id="cb67-9"><a href="#cb67-9" aria-hidden="true" tabindex="-1"></a><span class="fu">qqPlot</span>(robots_resid<span class="sc">$</span>resid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-17-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  4 21</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb69"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro_test</span>(robots_resid<span class="sc">$</span>resid) <span class="co">#0.01833449    </span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  variable           statistic p.value
+  &lt;chr&gt;                  &lt;dbl&gt;   &lt;dbl&gt;
+1 robots_resid$resid     0.914  0.0183</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb71"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a>humanoid_resid <span class="ot">&lt;-</span> robots_only <span class="sc">|&gt;</span> </span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(agent <span class="sc">==</span> <span class="st">"Humanoid"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">resid =</span> mean_pred <span class="sc">-</span> <span class="fu">mean</span>(mean_pred))</span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a><span class="fu">qqPlot</span>(humanoid_resid<span class="sc">$</span>resid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-17-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 22 26</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb73"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro_test</span>(humanoid_resid<span class="sc">$</span>resid) <span class="co">#0.02329538</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  variable             statistic p.value
+  &lt;chr&gt;                    &lt;dbl&gt;   &lt;dbl&gt;
+1 humanoid_resid$resid     0.918  0.0233</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb75"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a>human_resid <span class="ot">&lt;-</span> human_lookalikes_only <span class="sc">|&gt;</span> </span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(agent <span class="sc">==</span> <span class="st">"Human"</span>) <span class="sc">|&gt;</span> </span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">resid =</span> mean_pred <span class="sc">-</span> <span class="fu">mean</span>(mean_pred))</span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a><span class="fu">qqPlot</span>(human_resid<span class="sc">$</span>resid)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output-display">
+<p><img src="GazeDataAnalysis_files/figure-html/unnamed-chunk-17-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1]  4 20</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb77"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="fu">shapiro_test</span>(human_resid<span class="sc">$</span>resid) <span class="co">#0.00229771</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 3
+  variable          statistic p.value
+  &lt;chr&gt;                 &lt;dbl&gt;   &lt;dbl&gt;
+1 human_resid$resid     0.876 0.00230</code></pre>
+</div>
+</div>
+</section>
+<section id="try-the-boot-t-tost-1000-replications" class="level3">
+<h3 class="anchored" data-anchor-id="try-the-boot-t-tost-1000-replications">Try the boot t TOST, 1000 replications</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb79"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb79-1"><a href="#cb79-1" aria-hidden="true" tabindex="-1"></a><span class="fu">boot_t_TOST</span>(</span>
+<span id="cb79-2"><a href="#cb79-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,<span class="at">data=</span> robots_only,</span>
+<span id="cb79-3"><a href="#cb79-3" aria-hidden="true" tabindex="-1"></a> <span class="co"># data = predictiveGaze_preprocessed,</span></span>
+<span id="cb79-4"><a href="#cb79-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">hypothesis =</span> <span class="st">"EQU"</span>,</span>
+<span id="cb79-5"><a href="#cb79-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb79-6"><a href="#cb79-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">var.equal =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb79-7"><a href="#cb79-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">eqb =</span> .<span class="dv">035</span>,</span>
+<span id="cb79-8"><a href="#cb79-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">eqbound_type =</span> <span class="st">"raw"</span>,</span>
+<span id="cb79-9"><a href="#cb79-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">R =</span> <span class="dv">5000</span></span>
+<span id="cb79-10"><a href="#cb79-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb79-11"><a href="#cb79-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-12"><a href="#cb79-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Bootstrapped Paired t-test</span></span>
+<span id="cb79-13"><a href="#cb79-13" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb79-14"><a href="#cb79-14" aria-hidden="true" tabindex="-1"></a><span class="co"># The equivalence test was non-significant, t(29) = 0.192, p = 5.47e-01</span></span>
+<span id="cb79-15"><a href="#cb79-15" aria-hidden="true" tabindex="-1"></a><span class="co"># The null hypothesis test was non-significant, t(29) = 0.884, p = 4.42e-01</span></span>
+<span id="cb79-16"><a href="#cb79-16" aria-hidden="true" tabindex="-1"></a><span class="co"># NHST: don't reject null significance hypothesis that the effect is equal to zero </span></span>
+<span id="cb79-17"><a href="#cb79-17" aria-hidden="true" tabindex="-1"></a><span class="co"># TOST: don't reject null equivalence hypothesis</span></span>
+<span id="cb79-18"><a href="#cb79-18" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb79-19"><a href="#cb79-19" aria-hidden="true" tabindex="-1"></a><span class="co"># TOST Results </span></span>
+<span id="cb79-20"><a href="#cb79-20" aria-hidden="true" tabindex="-1"></a><span class="co"># </span></span>
+<span id="cb79-21"><a href="#cb79-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Effect Sizes </span></span>
+<span id="cb79-22"><a href="#cb79-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Note: percentile bootstrap method utilized.</span></span>
+<span id="cb79-23"><a href="#cb79-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-24"><a href="#cb79-24" aria-hidden="true" tabindex="-1"></a><span class="co">#             t           df p-value</span></span>
+<span id="cb79-25"><a href="#cb79-25" aria-hidden="true" tabindex="-1"></a><span class="co"># t-test        0.8840446   29  0.404   </span></span>
+<span id="cb79-26"><a href="#cb79-26" aria-hidden="true" tabindex="-1"></a><span class="co"># TOST Lower    1.5763355   29  0.077   </span></span>
+<span id="cb79-27"><a href="#cb79-27" aria-hidden="true" tabindex="-1"></a><span class="co"># TOST Upper    0.1917536   29  0.586   </span></span>
+<span id="cb79-28"><a href="#cb79-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb79-29"><a href="#cb79-29" aria-hidden="true" tabindex="-1"></a><span class="co">#             Estimate    SE          C.I.                Conf Level</span></span>
+<span id="cb79-30"><a href="#cb79-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Raw           0.04469444  0.05012942  [-0.0446, 0.123]    0.9</span></span>
+<span id="cb79-31"><a href="#cb79-31" aria-hidden="true" tabindex="-1"></a><span class="co"># Hedges's g(z) 0.15718704  0.20233060  [-0.1331, 0.5237]   0.9</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="main-effect-motion-planned-comparison" class="level3">
+<h3 class="anchored" data-anchor-id="main-effect-motion-planned-comparison">Main Effect Motion: Planned Comparison</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb80"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb80-1"><a href="#cb80-1" aria-hidden="true" tabindex="-1"></a><span class="co"># if performing the usual Wilcoxon </span></span>
+<span id="cb80-2"><a href="#cb80-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-3"><a href="#cb80-3" aria-hidden="true" tabindex="-1"></a>df_motion_type <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb80-4"><a href="#cb80-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(agent, condition)) <span class="sc">|&gt;</span>  </span>
+<span id="cb80-5"><a href="#cb80-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(participant, motion_type) <span class="sc">|&gt;</span> </span>
+<span id="cb80-6"><a href="#cb80-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">pred =</span> <span class="fu">mean</span>(mean_pred)) <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>mean_pred) <span class="sc">|&gt;</span> <span class="fu">ungroup</span>() <span class="sc">|&gt;</span> <span class="fu">distinct</span>() </span>
+<span id="cb80-7"><a href="#cb80-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-8"><a href="#cb80-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Wilcox test reported</span></span>
+<span id="cb80-9"><a href="#cb80-9" aria-hidden="true" tabindex="-1"></a>play_results <span class="ot">&lt;-</span> <span class="fu">wilcox_test</span>(<span class="at">formula =</span> pred <span class="sc">~</span> motion_type,</span>
+<span id="cb80-10"><a href="#cb80-10" aria-hidden="true" tabindex="-1"></a>                            <span class="at">alternative =</span> <span class="st">"two.sided"</span>,</span>
+<span id="cb80-11"><a href="#cb80-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">detailed =</span> <span class="cn">TRUE</span>, </span>
+<span id="cb80-12"><a href="#cb80-12" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> df_motion_type)</span>
+<span id="cb80-13"><a href="#cb80-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-14"><a href="#cb80-14" aria-hidden="true" tabindex="-1"></a><span class="co"># figuring out equivalence test - what should be the median diff</span></span>
+<span id="cb80-15"><a href="#cb80-15" aria-hidden="true" tabindex="-1"></a>wilcox_robots_result <span class="ot">&lt;-</span> rstatix<span class="sc">::</span><span class="fu">wilcox_test</span>(mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb80-16"><a href="#cb80-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">alternative =</span> <span class="st">"t"</span>, <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb80-17"><a href="#cb80-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> robots_only, <span class="at">detailed =</span> <span class="cn">TRUE</span></span>
+<span id="cb80-18"><a href="#cb80-18" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb80-19"><a href="#cb80-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb80-20"><a href="#cb80-20" aria-hidden="true" tabindex="-1"></a><span class="co"># whats the effect size </span></span>
+<span id="cb80-21"><a href="#cb80-21" aria-hidden="true" tabindex="-1"></a>robots_only_effsize <span class="ot">&lt;-</span> <span class="fu">wilcox_effsize</span>(</span>
+<span id="cb80-22"><a href="#cb80-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> robots_only,</span>
+<span id="cb80-23"><a href="#cb80-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">formula =</span> mean_pred <span class="sc">~</span> agent,</span>
+<span id="cb80-24"><a href="#cb80-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">paired =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb80-25"><a href="#cb80-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">mu =</span> <span class="dv">0</span>,</span>
+<span id="cb80-26"><a href="#cb80-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">ci =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb80-27"><a href="#cb80-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">conf.level =</span> <span class="fl">0.90</span>,</span>
+<span id="cb80-28"><a href="#cb80-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">ci.type =</span> <span class="st">"perc"</span>,</span>
+<span id="cb80-29"><a href="#cb80-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">nboot =</span> <span class="dv">1000</span></span>
+<span id="cb80-30"><a href="#cb80-30" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="main-effect-agent" class="level3">
+<h3 class="anchored" data-anchor-id="main-effect-agent">Main effect Agent:</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a>df_agent <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> </span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span><span class="fu">c</span>(motion_type, condition)) <span class="sc">|&gt;</span>  </span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(participant, agent) <span class="sc">|&gt;</span> </span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">pred =</span> <span class="fu">mean</span>(mean_pred)) <span class="sc">|&gt;</span> dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>mean_pred)  <span class="sc">|&gt;</span> <span class="fu">distinct</span>() <span class="sc">|&gt;</span> <span class="fu">ungroup</span>()</span>
+<span id="cb81-5"><a href="#cb81-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-6"><a href="#cb81-6" aria-hidden="true" tabindex="-1"></a><span class="co">#mean, mdn, sd</span></span>
+<span id="cb81-7"><a href="#cb81-7" aria-hidden="true" tabindex="-1"></a>df_agent_stats <span class="ot">&lt;-</span> df_agent <span class="sc">|&gt;</span> <span class="fu">group_by</span>(agent) <span class="sc">|&gt;</span> </span>
+<span id="cb81-8"><a href="#cb81-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(pred), <span class="at">median =</span> <span class="fu">median</span>(pred), <span class="at">sd =</span> <span class="fu">sd</span>(pred))</span>
+<span id="cb81-9"><a href="#cb81-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-10"><a href="#cb81-10" aria-hidden="true" tabindex="-1"></a>play_agent <span class="ot">&lt;-</span> <span class="fu">friedman_test</span>(<span class="at">formula =</span> pred <span class="sc">~</span> agent <span class="sc">|</span> participant,</span>
+<span id="cb81-11"><a href="#cb81-11" aria-hidden="true" tabindex="-1"></a>                            <span class="at">data =</span> df_agent)</span>
+<span id="cb81-12"><a href="#cb81-12" aria-hidden="true" tabindex="-1"></a><span class="co"># .y.   n     statistic   df  p           method</span></span>
+<span id="cb81-13"><a href="#cb81-13" aria-hidden="true" tabindex="-1"></a><span class="co"># pred  30    6.828829    2   0.03289566    Friedman test</span></span>
+<span id="cb81-14"><a href="#cb81-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-15"><a href="#cb81-15" aria-hidden="true" tabindex="-1"></a><span class="co">#t-test humanoid- robotic arm</span></span>
+<span id="cb81-16"><a href="#cb81-16" aria-hidden="true" tabindex="-1"></a>test1a <span class="ot">&lt;-</span> df_agent <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Human"</span>)</span>
+<span id="cb81-17"><a href="#cb81-17" aria-hidden="true" tabindex="-1"></a>res1a_gaze <span class="ot">&lt;-</span> <span class="fu">wilcox_test</span>(<span class="at">formula =</span> pred <span class="sc">~</span> agent, <span class="at">data =</span> test1a, <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">detailed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb81-18"><a href="#cb81-18" aria-hidden="true" tabindex="-1"></a><span class="co">#t-test humanoid-human</span></span>
+<span id="cb81-19"><a href="#cb81-19" aria-hidden="true" tabindex="-1"></a>test1b <span class="ot">&lt;-</span> df_agent <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Robotic Arm"</span>)</span>
+<span id="cb81-20"><a href="#cb81-20" aria-hidden="true" tabindex="-1"></a>res1b_gaze <span class="ot">&lt;-</span> <span class="fu">wilcox_test</span>(<span class="at">formula =</span> pred <span class="sc">~</span> agent, <span class="at">data =</span> test1b, <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">detailed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb81-21"><a href="#cb81-21" aria-hidden="true" tabindex="-1"></a><span class="co">#t-test human - robotic arm</span></span>
+<span id="cb81-22"><a href="#cb81-22" aria-hidden="true" tabindex="-1"></a>test1c <span class="ot">&lt;-</span> df_agent <span class="sc">|&gt;</span> <span class="fu">filter</span>(agent <span class="sc">!=</span> <span class="st">"Humanoid"</span>)</span>
+<span id="cb81-23"><a href="#cb81-23" aria-hidden="true" tabindex="-1"></a>res1c_gaze <span class="ot">&lt;-</span> <span class="fu">wilcox_test</span>(<span class="at">formula =</span> pred <span class="sc">~</span> agent, <span class="at">data =</span> test1c, <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">detailed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb81-24"><a href="#cb81-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb81-25"><a href="#cb81-25" aria-hidden="true" tabindex="-1"></a><span class="co"># res1c_effsize &lt;- wilcox_effsize(</span></span>
+<span id="cb81-26"><a href="#cb81-26" aria-hidden="true" tabindex="-1"></a><span class="co">#   data = test1c,</span></span>
+<span id="cb81-27"><a href="#cb81-27" aria-hidden="true" tabindex="-1"></a><span class="co">#   formula = pred ~ agent,</span></span>
+<span id="cb81-28"><a href="#cb81-28" aria-hidden="true" tabindex="-1"></a><span class="co">#   paired = TRUE,</span></span>
+<span id="cb81-29"><a href="#cb81-29" aria-hidden="true" tabindex="-1"></a><span class="co">#   mu = 0,</span></span>
+<span id="cb81-30"><a href="#cb81-30" aria-hidden="true" tabindex="-1"></a><span class="co">#   ci = TRUE,</span></span>
+<span id="cb81-31"><a href="#cb81-31" aria-hidden="true" tabindex="-1"></a><span class="co">#   conf.level = 0.90,</span></span>
+<span id="cb81-32"><a href="#cb81-32" aria-hidden="true" tabindex="-1"></a><span class="co">#   ci.type = "perc",</span></span>
+<span id="cb81-33"><a href="#cb81-33" aria-hidden="true" tabindex="-1"></a><span class="co">#   nboot = 1000</span></span>
+<span id="cb81-34"><a href="#cb81-34" aria-hidden="true" tabindex="-1"></a><span class="co"># )</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="perm-the-posthoc" class="level3">
+<h3 class="anchored" data-anchor-id="perm-the-posthoc">Perm the posthoc</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb82"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb82-1"><a href="#cb82-1" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed<span class="sc">$</span>mean_pred <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred)</span>
+<span id="cb82-2"><a href="#cb82-2" aria-hidden="true" tabindex="-1"></a><span class="co"># all variables must be coded as factors</span></span>
+<span id="cb82-3"><a href="#cb82-3" aria-hidden="true" tabindex="-1"></a>predictiveGaze_preprocessed<span class="sc">$</span>motion_type <span class="ot">&lt;-</span> <span class="fu">as.factor</span>(predictiveGaze_preprocessed<span class="sc">$</span>motion_type)</span>
+<span id="cb82-4"><a href="#cb82-4" aria-hidden="true" tabindex="-1"></a><span class="co">#collapse the dataset by motion</span></span>
+<span id="cb82-5"><a href="#cb82-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-6"><a href="#cb82-6" aria-hidden="true" tabindex="-1"></a><span class="co"># motion type</span></span>
+<span id="cb82-7"><a href="#cb82-7" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">wilcoxsign_test</span>(pred <span class="sc">~</span> motion_type, </span>
+<span id="cb82-8"><a href="#cb82-8" aria-hidden="true" tabindex="-1"></a>       <span class="at">data =</span> df_motion_type, </span>
+<span id="cb82-9"><a href="#cb82-9" aria-hidden="true" tabindex="-1"></a>       <span class="at">alternative =</span> <span class="st">"two.sided"</span>, </span>
+<span id="cb82-10"><a href="#cb82-10" aria-hidden="true" tabindex="-1"></a>       <span class="at">distribution =</span> <span class="st">"approximate"</span>)</span>
+<span id="cb82-11"><a href="#cb82-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb82-12"><a href="#cb82-12" aria-hidden="true" tabindex="-1"></a><span class="fu">pvalue</span>(results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &lt;1e-04
+99 percent confidence interval:
+ 0.0000000000 0.0005296914 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="co"># agent</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>results_agent_posthoc <span class="ot">&lt;-</span> <span class="fu">wilcoxsign_test</span>(pred <span class="sc">~</span> motion_type, </span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">data =</span> df_motion_type, </span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">alternative =</span> <span class="st">"two.sided"</span>, </span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">distribution =</span> <span class="st">"approximate"</span>)</span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a><span class="fu">pvalue</span>(results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &lt;1e-04
+99 percent confidence interval:
+ 0.0000000000 0.0005296914 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="fu">midpvalue</span>(results)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &lt;1e-04
+99 percent confidence interval:
+ 0.000000000 0.000460411 </code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="fu">statistic</span>(results, <span class="at">type =</span> <span class="st">"linear"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>     
+pos 0</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a>res <span class="ot">&lt;-</span> rstatix<span class="sc">::</span><span class="fu">wilcox_test</span>(mean_pred <span class="sc">~</span> motion_type,</span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">data =</span> predictiveGaze_preprocessed,</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">alternative =</span> <span class="st">"greater"</span>,</span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">paired =</span> <span class="cn">TRUE</span>, <span class="at">conf.level =</span> <span class="fl">0.95</span>,</span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>       <span class="at">detailed =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>res</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 × 12
+  estimate .y.      group1 group2    n1    n2 statistic     p conf.low conf.high
+*    &lt;dbl&gt; &lt;chr&gt;    &lt;chr&gt;  &lt;chr&gt;  &lt;int&gt; &lt;int&gt;     &lt;dbl&gt; &lt;dbl&gt;    &lt;dbl&gt;     &lt;dbl&gt;
+1   0.0691 mean_pr… Biolo… Nonbi…    90    90     1814. 0.035  0.00568       Inf
+# ℹ 2 more variables: method &lt;chr&gt;, alternative &lt;chr&gt;</code></pre>
+</div>
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># conf low 0.005683293 # conf.high Inf</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>descriptive_stats_by_motion <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> <span class="fu">group_by</span>(motion_type) <span class="sc">|&gt;</span> </span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(mean_pred), </span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>            <span class="at">median =</span> <span class="fu">median</span>(mean_pred), </span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred))</span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>descriptive_stats_by_agent <span class="ot">&lt;-</span> predictiveGaze_preprocessed <span class="sc">|&gt;</span> <span class="fu">group_by</span>(agent) <span class="sc">|&gt;</span> </span>
+<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(<span class="at">mean =</span> <span class="fu">mean</span>(mean_pred), </span>
+<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">median =</span> <span class="fu">median</span>(mean_pred), </span>
+<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>            <span class="at">sd =</span> <span class="fu">sd</span>(mean_pred))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># boot</span></span>
+<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a>boot_wilcoxon<span class="ot">&lt;-</span> <span class="cf">function</span>(formula, data, indices) {</span>
+<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a>    d <span class="ot">&lt;-</span> data[indices,] <span class="co"># allows boot to select sample</span></span>
+<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>    fit <span class="ot">&lt;-</span> <span class="fu">pairwise_wilcox_test</span>(formula, <span class="at">data=</span>d,</span>
+<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>                                <span class="at">alternative =</span> <span class="st">"greater"</span>)</span>
+<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(fit<span class="sc">$</span>statistic)</span>
+<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb93-10"><a href="#cb93-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-11"><a href="#cb93-11" aria-hidden="true" tabindex="-1"></a>boot_results <span class="ot">&lt;-</span> <span class="fu">boot</span>(<span class="at">data =</span> df_motion_type, </span>
+<span id="cb93-12"><a href="#cb93-12" aria-hidden="true" tabindex="-1"></a>                <span class="at">statistic =</span> boot_wilcoxon, </span>
+<span id="cb93-13"><a href="#cb93-13" aria-hidden="true" tabindex="-1"></a>                <span class="at">R =</span> <span class="dv">500</span>, </span>
+<span id="cb93-14"><a href="#cb93-14" aria-hidden="true" tabindex="-1"></a>                <span class="at">formula =</span> pred <span class="sc">~</span> <span class="st">`</span><span class="at">motion_type</span><span class="st">`</span>)</span>
+<span id="cb93-15"><a href="#cb93-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb93-16"><a href="#cb93-16" aria-hidden="true" tabindex="-1"></a><span class="fu">sum</span>(boot_results<span class="sc">$</span>t <span class="sc">&gt;=</span> boot_results<span class="sc">$</span>t0)<span class="sc">/</span><span class="dv">1000</span></span>
+<span id="cb93-17"><a href="#cb93-17" aria-hidden="true" tabindex="-1"></a><span class="co"># 0.49</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+</div>
+</section>
+<section id="descriptive-statistics" class="level3">
+<h3 class="anchored" data-anchor-id="descriptive-statistics">Descriptive Statistics</h3>
+<div class="cell">
+<details open="">
+<summary>Code</summary>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Kolmogorov-Smirnov stat testing against normal distribution</span></span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ks.test</span>(predictiveGaze_preprocessed<span class="sc">$</span>mean_pred, <span class="st">"pnorm"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in ks.test.default(predictiveGaze_preprocessed$mean_pred, "pnorm"):
+ties should not be present for the Kolmogorov-Smirnov test</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+    Asymptotic one-sample Kolmogorov-Smirnov test
+
+data:  predictiveGaze_preprocessed$mean_pred
+D = 0.5, p-value &lt; 2.2e-16
+alternative hypothesis: two-sided</code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
